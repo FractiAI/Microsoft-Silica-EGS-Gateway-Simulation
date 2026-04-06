@@ -66,11 +66,68 @@ Microsoft-Silica-EGS-Gateway-Simulation/
 ├── silica_fdtd/
 │   ├── __init__.py             # Package manifest, Meep-compatible API
 │   └── _core.py               # 2D TM Yee FDTD engine (pure Python + NumPy)
-├── egs_gateway_hifi_test.py    # High-fidelity five-pillar test suite
+├── egs_os.py                   # EGS OS kernel — holographic OS on silica voxel
+├── egs_os_test.py              # 14-operation OS test suite
+├── egs_gateway_hifi_test.py    # High-fidelity five-pillar FDTD test suite
 ├── testing_suite.py            # Unit tests for gateway logic and FDTD backend
 ├── EGS_GATEWAY_PAPER.md        # Peer-review ready paper
 └── environment.yml             # Conda env for optional MIT Meep upgrade
 ```
+
+---
+
+## OS Layer — EGS OS on the Silica Voxel Processor
+
+The EGS Gateway goes beyond a passive filter: it loads a **holographic operating system** (`egs_os.py`) and executes real OS operations inside the FDTD-simulated fused-silica voxel.
+
+```
+  Process     = phase-encoded voxel state   φ_pid = pid × 2π / 101
+  Memory page = 101-Moon bucket slot        address ∈ {0 … 100}
+  Clock tick  = Crab pulsar period          Δt = 1 / 29.94 Hz ≈ 33.4 ms
+  Interrupt   = 180° phase flip             flare event / epoch bump
+  I/O channel = H-line bus                  gateway_filter phase lock
+  Boot image  = burn_master_fractal()       AR14409 seed → 101-value OS image
+  Syscall     = FDTD simulation run         return value = transmitted flux
+```
+
+### Syscall Table
+
+| # | Name | Operation |
+|---|---|---|
+| 0 | `SYS_READ` | Read from H-line bus — phase-locked read from Moon page |
+| 1 | `SYS_WRITE` | Write to H-line bus — SHA-256 hashed write to Moon page |
+| 2 | `SYS_FORK` | Create child process — unique phase slot + Moon page |
+| 3 | `SYS_EXEC` | Execute process — runs FDTD, returns flux + InterferenceVerdict |
+| 4 | `SYS_EXIT` | Terminate process — frees Moon page, marks zombie |
+| 5 | `SYS_PS` | List process table |
+| 6 | `SYS_MALLOC` | Allocate Moon page |
+| 7 | `SYS_FREE` | Free Moon page |
+| 8 | `SYS_CLOCK` | Read Crab pulsar tick counter |
+| 9 | `SYS_FLARE` | Raise interrupt — 180° phase flip, epoch bump, sunspot self-correction |
+| 10 | `SYS_REBOOT` | Reset kernel — re-burns master from AR14409 seed |
+
+### OS Test Suite (14 operations)
+
+```powershell
+python egs_os_test.py
+```
+
+| Test | What is verified |
+|---|---|
+| T01 BOOT | Kernel boots, OS image burned to 101 Moon pages, PID 0+1 spawned |
+| T02 CLOCK | Crab pulsar tick counter and ~33.4 ms tick period |
+| T03 PS | Process table lists kernel and init |
+| T04 MALLOC/FREE | Moon page allocation and release |
+| T05 WRITE | H-line bus write with SHA-256 placement receipt |
+| T06 READ | H-line bus phase-locked read (lock_strength modulated) |
+| T07 FORK | Child process creation with unique phase slot |
+| T08 EXEC | FDTD execution → flux return value + InterferenceVerdict |
+| T09 SCHEDULER | SOL-0 round-robin dispatches READY processes |
+| T10 FLARE | 180° phase flip, epoch bump, sunspot self-correction |
+| T11 EXIT | Process termination, Moon page freed |
+| T12 DMESG | Kernel log — all entries carry Layer-C SHA-256 hashes |
+| T13 MEMMAP | Full 101-Moon memory map with ownership and hashes |
+| T14 MULTI-PROCESS | Fork 3 workers, exec all, verify fluxes, exit all |
 
 ---
 

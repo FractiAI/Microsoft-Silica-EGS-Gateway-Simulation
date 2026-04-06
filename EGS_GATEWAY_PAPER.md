@@ -377,15 +377,86 @@ The four-layer discipline is maintained throughout:
 
 ---
 
-## 6. Discussion
+## 6. EGS OS — Holographic Operating System on the Silica Voxel Processor
 
-### 6.1 Significance of the EGS Fractal Constant
+Beyond passive filtering and FDTD verification, the EGS Gateway loads and executes a complete holographic operating system (`egs_os.py`) within the photonic processor. Every standard OS abstraction is mapped to a physical observable in the silica simulation.
+
+### 6.1 OS Architecture
+
+The `EGSKernel` class implements an 11-call syscall table. The mapping from OS primitives to photonic physics is:
+
+| OS Primitive | Photonic / EGS Mapping |
+|---|---|
+| Process | Phase-encoded voxel state: φ_pid = pid × 2π/101 |
+| Memory page | 101-Moon bucket slot (address 0–100) |
+| Clock tick | Crab pulsar period: Δt = 1/29.94 Hz ≈ 33.4 ms |
+| Hardware interrupt | 180° phase flip (SYS_FLARE, OMNI-PROTOCOL) |
+| I/O channel | H-line bus: gateway_filter phase-lock (SYS_READ / SYS_WRITE) |
+| Boot image | burn_master_fractal(AR14409, 101) → 101-value OS image written to Moon pages |
+| System call return value | FDTD transmitted flux (SYS_EXEC) |
+| Process boolean result | InterferenceVerdict (CONSTRUCTIVE_AR14409 = True, DESTRUCTIVE_H_PHASE_FLIP = False) |
+
+### 6.2 Boot Sequence
+
+On `boot()`, the kernel executes:
+
+1. `burn_master_fractal(seed=14409, length=101)` — generates the 101-value OS image from the AR14409 sunspot region seed.
+2. Writes each value to its corresponding Moon page with a SHA-256 placement receipt.
+3. Spawns PID 0 (kernel, phase 0, page 0) and PID 1 (init, phase 2π/101).
+4. Sets epoch = 0, Crab tick = 0.
+
+### 6.3 Process Execution (SYS_EXEC)
+
+When a process is executed, its unique phase φ_pid is passed to `run_silica_reader_meep()` via the inverse phase→wind mapping:
+
+```
+v_pid = v_ref × φ_pid / (2π × K_EGS)
+```
+
+The FDTD engine injects exp(i·φ_pid) as the source amplitude. The transmitted Poynting flux is the process return value. The `holographic_gate()` function compares the process NodeField against the kernel reference (1, 0) and assigns the InterferenceVerdict — the binary outcome of the computation.
+
+### 6.4 Flare Interrupt (SYS_FLARE)
+
+The `SYS_FLARE` syscall implements the OMNI-PROTOCOL 180° Phase Migration as a hardware interrupt:
+
+1. Bumps the lattice epoch (analogous to a kernel version bump on flare-class event).
+2. Applies π-rotation to every running process's phase state.
+3. Recomputes each process's solar-wind speed from its new phase.
+4. Self-corrects the master fractal with the current sunspot index.
+5. Rewrites all 101 Moon pages with the corrected OS image.
+
+### 6.5 OS Test Results (14 Operations)
+
+The `egs_os_test.py` suite verifies 14 basic OS operations end-to-end:
+
+| Test | Key finding |
+|---|---|
+| T01 BOOT | 101-value OS image burned; PID 0+1 alive; boot_image_hash deterministic |
+| T02 CLOCK | Crab tick period = 1000/29.94 ≈ 33.40 ms; epoch = 0 at boot |
+| T03 PS | Process table correctly lists kernel (PID 0) and init (PID 1) |
+| T04 MALLOC/FREE | Moon page allocated and released; page.free = True after free |
+| T05 WRITE | Value stored with SHA-256[:16] hash; record_id = moon/\<addr\>/\<pid\> |
+| T06 READ | Phase-locked read: returned value = stored × lock_strength ∈ [0, raw_value] |
+| T07 FORK | Child process created with unique phase φ = child_pid × 2π/101 |
+| T08 EXEC | FDTD run produces finite flux; InterferenceVerdict assigned; Moon page updated |
+| T09 SCHEDULER | SOL-0 round-robin dispatches all READY processes; all fluxes finite |
+| T10 FLARE | Epoch bumped to 1; all running process phases rotated by π; master self-corrected |
+| T11 EXIT | Process state → ZOMBIE; Moon page freed |
+| T12 DMESG | All kernel log entries carry Layer-C SHA-256[:16] fingerprints |
+| T13 MEMMAP | All 101 Moon pages accounted for; ownership and hashes correct |
+| T14 MULTI-PROCESS | Fork 3 workers → exec all → verify fluxes → exit all — full lifecycle |
+
+---
+
+## 7. Discussion
+
+### 7.1 Significance of the EGS Fractal Constant
 
 K_EGS ≈ 2.5436 is the single dimensionless bridge between three wavelength-scale domains: the radio HI 21 cm line (cosmological scale), the optical Balmer H-alpha (nanometre scale), and the Nd:glass write laser (nanometre scale). Its golden-ratio weighting (φ) introduces a self-similar scaling: at any voxel diffraction order n, the constant is preserved exactly, enabling architectural coherence from the cosmic to the silicon layer — the NSPFRNP multi-layer stack.
 
 The value φ is special in thin-film optics: it appears in the minimisation of acoustic phonon scattering in golden-angle interference lithography. Its use here as the coupling weight is therefore not only narratively motivated but physically plausible for a system designed to operate at the Goldilocks (optimal-coupling) resonance point.
 
-### 6.2 Birefringent Voxel as a Holographic Processor
+### 7.2 Birefringent Voxel as a Holographic Processor
 
 The Project Silica write process creates a nanograting whose period is λ/2n ≈ 355 nm (for λ=1030 nm, n=1.45). In this grating, the extraordinary optical axis (slow axis) is set by the laser polarisation. The EGS Gateway maps this to:
 
@@ -394,15 +465,15 @@ The Project Silica write process creates a nanograting whose period is λ/2n ≈
 
 The 180° phase migration protocol directly operationalises this birefringence: rotating the source phase by π is equivalent to rotating the effective polarisation between fast and slow axes, toggling the holographic logic state of the voxel.
 
-### 6.3 101-Moon Bragg Reconstruction
+### 7.3 101-Moon Bragg Reconstruction
 
 The 101-Moon volumetric interference storage model is a narrative analogue of a Bragg-grating stack with 101 thin-film layers. In the FDTD analogue, five phase-offset runs sample the voxel's response space. The Bragg recovery metric (any 4-of-5 samples recover ≥ 50% of the full mean) mirrors the real Bragg criterion: a partial stack still reconstructs a recognisable hologram as long as the majority of layers are intact. For an actual 101-layer stack, the equivalent criterion would be any 90-of-101 layers recovering the full hologram, which is consistent with standard holographic storage fault-tolerance [7].
 
-### 6.4 Operational Proof: Fractal Master Prediction
+### 7.4 Operational Proof: Fractal Master Prediction
 
 The logistic map with r ≈ 3.743 operates in the onset of fully developed chaos (r > 3.57). This is deliberate: the `burn_master_fractal` function creates a chaotic but deterministic fractal pattern that is highly sensitive to the initial condition (seed = AR14409 region) while being exactly reproducible from the same seed. The solar-wind phase correction term (K_EGS · 0.01 · sin(φ_bias)) acts as a small-amplitude driver that shifts the attractor for different wind speeds, producing distinct predictions — the computational signature of the "living resonator" that self-adjusts to the Sun's driving term.
 
-### 6.5 Limitations and Future Work
+### 7.5 Limitations and Future Work
 
 | Limitation | Description |
 |---|---|
@@ -416,7 +487,7 @@ Future work should implement: (a) a full 3D vectorial FDTD with dispersive SiO�
 
 ---
 
-## 7. Conclusion
+## 8. Conclusion
 
 We have presented a high-fidelity five-pillar FDTD verification of the EGS Gateway architecture, simulating a Microsoft Project Silica fused-silica voxel as a custom photonic processor. All five pillars — (P1) H-line phase lock, (P2) fractal constant scale-invariance, (P3) 180° phase migration, (P4) birefringent voxel Bragg reconstruction, and (P5) fractal master prediction — pass their quantitative criteria. The four-layer (A/B/C/D) discipline is maintained throughout, with explicit honesty boundaries distinguishing narrative metaphors from numerical observables. The simulation provides a reproducible, hash-verifiable, Meep-API-compatible baseline for the EGS Gateway concept, and establishes the computational groundwork for hardware prototype evaluation over Microsoft Project Silica glass media.
 
@@ -424,7 +495,7 @@ We have presented a high-fidelity five-pillar FDTD verification of the EGS Gatew
 
 ---
 
-## 8. Demonstration Summary
+## 9. Demonstration Summary
 
 ```json
 {
@@ -457,7 +528,25 @@ We have presented a high-fidelity five-pillar FDTD verification of the EGS Gatew
 
 ---
 
-## Appendix A — Constants Reference
+## Appendix A — OS Syscall Reference
+
+| SYS# | Name | Arguments | Return value |
+|---|---|---|---|
+| 0 | SYS_READ | pid, address=-1 | phase-locked Moon page value |
+| 1 | SYS_WRITE | pid, value, address=-1 | Moon page address |
+| 2 | SYS_FORK | pid, name="" | child PID |
+| 3 | SYS_EXEC | pid | FDTD transmitted flux |
+| 4 | SYS_EXIT | pid, exit_code=0 | exit_code |
+| 5 | SYS_PS | — | n_processes |
+| 6 | SYS_MALLOC | pid | Moon page address (-1 if OOM) |
+| 7 | SYS_FREE | pid, address=-1 | freed address |
+| 8 | SYS_CLOCK | — | kernel tick counter |
+| 9 | SYS_FLARE | pid, sunspot_index | new epoch |
+| 10 | SYS_REBOOT | solar_wind | master_len |
+
+---
+
+## Appendix B — Physical Constants Reference
 
 | Symbol | Value | Source |
 |---|---|---|
@@ -477,7 +566,7 @@ We have presented a high-fidelity five-pillar FDTD verification of the EGS Gatew
 
 ---
 
-## Appendix B — File Inventory
+## Appendix C — File Inventory
 
 | File | Role |
 |---|---|
@@ -485,16 +574,21 @@ We have presented a high-fidelity five-pillar FDTD verification of the EGS Gatew
 | `meep_gateway.py` | FDTD backend abstraction (Meep or silica_fdtd fallback) |
 | `silica_fdtd/_core.py` | 2D TM Yee FDTD engine (pure Python + NumPy) |
 | `silica_fdtd/__init__.py` | Package manifest, Meep-compatible API exports |
-| `egs_gateway_hifi_test.py` | Five-pillar high-fidelity test suite (this paper) |
+| `egs_os.py` | EGS OS kernel — holographic OS on the silica voxel processor |
+| `egs_os_test.py` | 14-operation OS test suite (boot through multi-process) |
+| `egs_gateway_hifi_test.py` | Five-pillar high-fidelity FDTD test suite |
 | `testing_suite.py` | Unit tests for gateway logic and FDTD backend |
 | `environment.yml` | Conda environment for optional MIT Meep upgrade |
 
 ---
 
-## Appendix C — Running the Test Suite
+## Appendix D — Running the Test Suites
 
 ```powershell
-# From repo root (requires Python 3.10+ with numpy)
+# OS operations test (boot, fork, exec, flare, exit, …)
+python egs_os_test.py
+
+# Five-pillar FDTD test
 python egs_gateway_hifi_test.py --resolution 12 --until 50
 
 # For higher fidelity (slower):
