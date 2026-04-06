@@ -1,0 +1,9 @@
+# MIT Meep (PyMeep) — FDTD backend for the silica reader path.
+# Linux / macOS / WSL: conda env create -f environment.yml && conda activate egs-meep
+name: egs-meep
+channels:
+  - conda-forge
+dependencies:
+  - python >=3.10
+  - numpy
+  - pymeep
