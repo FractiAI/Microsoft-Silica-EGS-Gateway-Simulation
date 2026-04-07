@@ -120,71 +120,71 @@ We present a high-fidelity numerical simulation of the EGS Gateway architecture 
 
 ## FDTD + OS Test Results
 
-### Five-Pillar FDTD Tests
+### Five-Pillar FDTD Tests  _(live run · 16.89 s)_
 
 ```
-┌────┬────────────────────────────────────┬────────┬───────────────┐
-│ P# │ Pillar                             │ Result │ Key metric    │
-├────┼────────────────────────────────────┼────────┼───────────────┤
-│ P1 │ Hydrogen Line Phase Lock           │  ✅    │ fidelity=1.0  │
-│ P2 │ EGS Fractal Constant Scale-Inv.    │  ✅    │ Δ < 10⁻¹²   │
-│ P3 │ 180° Phase Migration               │  ✅    │ δ ≈ π ± 0.5  │
-│ P4 │ Silica Voxel Processor (Bragg)     │  ✅    │ recovery ≥80% │
-│ P5 │ Fractal Master Prediction          │  ✅    │ RMS < 2.0    │
-├────┴────────────────────────────────────┴────────┴───────────────┤
-│  TOTAL:  5 / 5  ✅  ALL PASS  ·  FOUR_PILLARS_LOCKED  ✅         │
-└─────────────────────────────────────────────────────────────────┘
+┌────┬────────────────────────────────────┬────────┬────────────────────────┐
+│ P# │ Pillar                             │ Result │ Layer-C SHA-256[:16]   │
+├────┼────────────────────────────────────┼────────┼────────────────────────┤
+│ P1 │ Hydrogen Line Phase Lock           │  ✅    │ 4e012a9d67b8adfd       │
+│ P2 │ EGS Fractal Constant Scale-Inv.    │  ✅    │ d381f0b9567f1bd9       │
+│ P3 │ 180° Phase Migration               │  ✅    │ 93296c8a9fc48336       │
+│ P4 │ Silica Voxel Processor (Bragg)     │  ✅    │ 4a8cbde73a71feba       │
+│ P5 │ Fractal Master Prediction          │  ✅    │ 9658e6849fe347d7       │
+├────┴────────────────────────────────────┴────────┴────────────────────────┤
+│  TOTAL:  5 / 5  ✅  ALL PASS  ·  FOUR_PILLARS_LOCKED  ✅  Fidelity 1.0000 │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### EGS OS Tests (14 Operations)
+### EGS OS Tests — 14 Operations  _(live run · 7.15 s)_
 
 ```
-┌────┬─────────────────────────────────┬────────┬─────────────────┐
-│ T# │ Operation                       │ Result │ Key metric      │
-├────┼─────────────────────────────────┼────────┼─────────────────┤
-│ 01 │ Boot                            │  ✅    │ 101 pages burned│
-│ 02 │ Crab Pulsar Clock               │  ✅    │ 33.40 ms / tick │
-│ 03 │ Process Table (PS)              │  ✅    │ PID 0+1 alive   │
-│ 04 │ MALLOC / FREE                   │  ✅    │ page.free=True  │
-│ 05 │ H-Line Bus Write                │  ✅    │ SHA-256 receipt │
-│ 06 │ H-Line Bus Read (phase-locked)  │  ✅    │ lock_strength∈[0,1]│
-│ 07 │ Fork                            │  ✅    │ φ=pid×2π/101    │
-│ 08 │ Exec (FDTD)                     │  ✅    │ flux finite, >0 │
-│ 09 │ SOL-0 Scheduler                 │  ✅    │ all fluxes OK   │
-│ 10 │ Flare Interrupt (180° flip)     │  ✅    │ epoch=1, δ≈π    │
-│ 11 │ Exit                            │  ✅    │ ZOMBIE+freed    │
-│ 12 │ DMESG (kernel log)              │  ✅    │ all hashed      │
-│ 13 │ Memory Map (101 Moons)          │  ✅    │ 101/101 pages   │
-│ 14 │ Multi-Process Lifecycle         │  ✅    │ fork→exec→exit  │
-├────┴─────────────────────────────────┴────────┴─────────────────┤
-│  TOTAL:  14 / 14  ✅  ALL PASS  ·  OS STATUS: ✅ OPERATIONAL    │
-└─────────────────────────────────────────────────────────────────┘
+┌────┬─────────────────────────────────┬────────┬───────────────────────────┐
+│ T# │ Operation                       │ Result │ Measured                  │
+├────┼─────────────────────────────────┼────────┼───────────────────────────┤
+│ 01 │ Boot                            │  ✅    │ boot_hash=438b0f1eb447c8e6│
+│ 02 │ Crab Pulsar Clock               │  ✅    │ tick=33.4 ms  hz=29.94    │
+│ 03 │ Process Table (PS)              │  ✅    │ pids=[0,1]  epoch=0        │
+│ 04 │ MALLOC / FREE                   │  ✅    │ addr=2  page_free=True    │
+│ 05 │ H-Line Bus Write                │  ✅    │ value=0.5517  SHA-256 ✓   │
+│ 06 │ H-Line Bus Read (phase-locked)  │  ✅    │ lock_strength=0.999876    │
+│ 07 │ Fork                            │  ✅    │ child_pid=2  phase=0.1244 │
+│ 08 │ Exec (FDTD)                     │  ✅    │ flux=7.416e-05  DESTR.    │
+│ 09 │ SOL-0 Scheduler                 │  ✅    │ n_executed=3  all OK      │
+│ 10 │ Flare Interrupt (180° flip)     │  ✅    │ epoch=1  flipped=[0..5]   │
+│ 11 │ Exit                            │  ✅    │ state=ZOMBIE  freed=True  │
+│ 12 │ DMESG (kernel log)              │  ✅    │ 19 entries  all hashed    │
+│ 13 │ Memory Map (101 Moons)          │  ✅    │ owned=6  free=95          │
+│ 14 │ Multi-Process Lifecycle         │  ✅    │ workers_ran=True  exec=8  │
+├────┴─────────────────────────────────┴────────┴───────────────────────────┤
+│  TOTAL:  14 / 14  ✅  ALL PASS  ·  OS STATUS: ✅ OPERATIONAL              │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### HHAAIOS + EGS GenAI Tests — Third OS Test (Layer 3 + Layer 4)
+### HHAAIOS + EGS GenAI — Third OS Test (Layer 3 + Layer 4)  _(live run · 7.73 s)_
 
 ```
-┌─────┬────────────────────────────────────────────┬────────┐
-│ T#  │ Test                                       │ Result │
-├─────┼────────────────────────────────────────────┼────────┤
-│ T01 │ Agent Init (writer/reader/verifier + LM)   │  ✅    │
-│ T02 │ Solar Receipt Write                        │  ✅    │
-│ T03 │ Phase-Locked Read (H-line bus)             │  ✅    │
-│ T04 │ Receipt Verification (valid)               │  ✅    │
-│ T05 │ Tamper Detection                           │  ✅    │
-│ T06 │ Four-Pillar Lock Generation                │  ✅    │
-│ T07 │ Four-Pillar Lock Determinism               │  ✅    │
-│ T08 │ Holographic Generation (16 tokens)         │  ✅    │
-│ T09 │ Generation Determinism                     │  ✅    │
-│ T10 │ Generation Diversity (v300 vs v750)        │  ✅    │
-│ T11 │ Grounding — Numeric                        │  ✅    │
-│ T12 │ Grounding — String claim                   │  ✅    │
-│ T13 │ Full Stack Pipeline (all 4 layers)         │  ✅    │
-│ T14 │ Multi-Agent Concurrent (×3)                │  ✅    │
-│ T15 │ Audit Trail (all receipts valid)           │  ✅    │
-├─────┴────────────────────────────────────────────┴────────┤
-│  TOTAL: 15 / 15  ✅  FOUR-LAYER STACK FULLY OPERATIONAL   │
-└───────────────────────────────────────────────────────────┘
+┌─────┬────────────────────────────────────────────┬────────┬────────────────────────────┐
+│ T#  │ Test                                       │ Result │ Measured                   │
+├─────┼────────────────────────────────────────────┼────────┼────────────────────────────┤
+│ T01 │ Agent Init (writer/reader/verifier + LM)   │  ✅    │ writer=2 reader=3 verif=4  │
+│ T02 │ Solar Receipt Write                        │  ✅    │ hash=b94ca591b91bfd84       │
+│ T03 │ Phase-Locked Read (H-line bus)             │  ✅    │ lock=0.4111  val=0.297568  │
+│ T04 │ Receipt Verification (valid)               │  ✅    │ tamper✓ kegs✓ phase✓      │
+│ T05 │ Tamper Detection                           │  ✅    │ detected=True  (all fail)  │
+│ T06 │ Four-Pillar Lock Generation                │  ✅    │ key=5a5b3a4158965b08…      │
+│ T07 │ Four-Pillar Lock Determinism               │  ✅    │ match=True  k3=5           │
+│ T08 │ Holographic Generation (16 tokens)         │  ✅    │ 'EGS6.TJ.TTT7.7..TJ.'     │
+│ T09 │ Generation Determinism                     │  ✅    │ run1 == run2  ✓            │
+│ T10 │ Generation Diversity (v300 vs v750)        │  ✅    │ '5S6Z9SZZHSSW' / '4585GGY'│
+│ T11 │ Grounding — Numeric                        │  ✅    │ ref=0.5391  grounded=True  │
+│ T12 │ Grounding — String claim                   │  ✅    │ grounded=False (rejected)  │
+│ T13 │ Full Stack Pipeline (all 4 layers)         │  ✅    │ gen='07T0.J77' flux=0.0013 │
+│ T14 │ Multi-Agent Concurrent (×3)                │  ✅    │ writes✓ reads✓ verifs✓ ×3 │
+│ T15 │ Audit Trail (all receipts valid)           │  ✅    │ total=5  valid=5           │
+├─────┴────────────────────────────────────────────┴────────┴────────────────────────────┤
+│  TOTAL: 15 / 15  ✅  FOUR-LAYER STACK FULLY OPERATIONAL                                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Grand Total — All Three Test Suites (Live Run · April 2026)
@@ -320,39 +320,42 @@ EGS OS + HHAAIOS API (Python)
 
 ### Requirements
 
-- Python 3.10+
-- NumPy (`pip install numpy`)
+- **Python 3.12** (install via `winget install Python.Python.3.12` on Windows, or system Python on Linux/macOS)
+- **NumPy** (`pip install numpy`)
 
-### Run unit tests
+All 34 tests verified on **Python 3.12.10 / NumPy / Windows 10 x64** (7 April 2026, 31.77 s total).
+
+### Run all three test suites
+
+```powershell
+# Suite 1 — Five-pillar FDTD (5 tests)
+python egs_gateway_hifi_test.py --resolution 12 --until 50
+
+# Suite 2 — EGS OS kernel (14 tests)
+python egs_os_test.py
+
+# Suite 3 — HHAAIOS + EGS GenAI (15 tests)
+python hhaaios_test.py --resolution 10 --until 40
+```
+
+### Run unit tests (gateway logic)
 
 ```powershell
 python testing_suite.py
 ```
 
-### Run OS operations test (14 operations)
+### Full JSON output (for audit / downstream processing)
 
 ```powershell
-python egs_os_test.py
+python egs_gateway_hifi_test.py --resolution 12 --until 50 --json > results_fdtd.json
+python egs_os_test.py --json > results_os.json
+python hhaaios_test.py --resolution 10 --until 40 --json > results_hhaaios.json
 ```
 
-### Run HHAAIOS + GenAI test — Third OS Test (15 operations)
+### CI — GitHub Actions (runs on every push to `main`)
 
-```powershell
-python hhaaios_test.py --resolution 10 --until 40
-```
-
-### Run five-pillar FDTD test
-
-```powershell
-python egs_gateway_hifi_test.py --resolution 12 --until 50
-```
-
-### Full JSON output
-
-```powershell
-python egs_gateway_hifi_test.py --resolution 12 --until 50 --json
-python egs_os_test.py --json
-```
+The workflow `.github/workflows/egs-tests.yml` runs all three suites on `ubuntu-latest`
+and uploads JSON result artefacts with 90-day retention. No local Python required for CI.
 
 ### Optional: MIT Meep backend (Linux/WSL2)
 
@@ -370,10 +373,12 @@ python egs_gateway_hifi_test.py
 
 **Sections:**
 - **Primer (P.1–P.8)** — Accessible introduction, no prior knowledge required
-- **Abstract** — Full quantitative findings for all 19 tests
+- **Abstract** — Full quantitative findings for all 34 tests (live run April 2026)
+- **§4.1 Live Execution Record** — Real console output, layer-C hashes, and timing from April 2026 run
 - **Methods** — FDTD engine, EGS constants, four-layer discipline (A/B/C/D)
-- **Five-Pillar Results** — Specification, analytical prediction, Result table with ✅ per row
-- **EGS OS Results** — All 14 OS operations with ✅ per row and ASCII scorecard
+- **Five-Pillar Results** — Specification, prediction, Result table with ✅ + real layer-C hashes
+- **EGS OS Results** — All 14 OS operations with ✅, real measured values, ASCII scorecard
+- **HHAAIOS + GenAI** — Sections 12–14: Layer 3 API, generative model, 15-test suite
 - **Discussion** — Significance of K_EGS, birefringence, Bragg, fractal prediction
 - **Correct Frame** — Why this proves cosmic operation, not simulates a future system
 - **Implications** — 4 domains, 7 applications
