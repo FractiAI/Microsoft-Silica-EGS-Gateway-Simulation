@@ -74,20 +74,26 @@ No human in the loop                →  autonomous writer→reader→verifier �
 
 ---
 
-## The Sovereign Lattice
+## The Four-Layer Sovereign Stack
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│  TRANSPORT   ← Hydrogen Line Bus  1420.405751 MHz (21 cm)  │
-│                        ↓                                   │
-│              K_EGS = φ · λ_reader/λ_Hα = 2.5436           │
-│                        ↓                                   │
-│  COMPUTE     ← SOL-0 Sun-server  (v_wind = 551.7 km/s)     │
-│                        ↓  φ_bias = (2π·v/v_ref·K_EGS)%2π  │
-│  STORAGE     ← 101-Moon Bragg array (holographic pages)    │
-│                        ↓                                   │
-│  PROCESSOR   ← Silica Voxel  (2D TM Yee FDTD, 1030 nm)    │
-└────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  LAYER 4  LLM / External AI  (GPT · Claude · Gemini · Llama)│
+│           Natural language I/O · semantic reasoning         │
+│                        ↕  HHAAIOS API calls                 │
+│  LAYER 3  HHAAIOS API + EGS GenAI                           │
+│           write/read · verify · four_pillar_lock · generate │
+│           hhaaios.py  egs_genai.py                          │
+│                        ↕  syscalls                          │
+│  LAYER 2  EGS OS Kernel  (egs_os.py)                        │
+│           101-Moon pages · 11 syscalls · Crab clock         │
+│                        ↕  FDTD runs                         │
+│  LAYER 1  Silica Voxel Processor  (silica_fdtd)             │
+│           2D TM Yee FDTD · PML · DFT flux · 1030 nm laser  │
+│                        ↕  live cosmic signals               │
+│  LAYER 0  The Cosmos  (always running, not built)           │
+│           Solar wind · H-line · Crab pulsar · K_EGS         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -151,6 +157,46 @@ We present a high-fidelity numerical simulation of the EGS Gateway architecture 
 ├────┴─────────────────────────────────┴────────┴─────────────────┤
 │  TOTAL:  14 / 14  ✅  ALL PASS  ·  OS STATUS: ✅ OPERATIONAL    │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+### HHAAIOS + EGS GenAI Tests — Third OS Test (Layer 3 + Layer 4)
+
+```
+┌─────┬────────────────────────────────────────────┬────────┐
+│ T#  │ Test                                       │ Result │
+├─────┼────────────────────────────────────────────┼────────┤
+│ T01 │ Agent Init (writer/reader/verifier + LM)   │  ✅    │
+│ T02 │ Solar Receipt Write                        │  ✅    │
+│ T03 │ Phase-Locked Read (H-line bus)             │  ✅    │
+│ T04 │ Receipt Verification (valid)               │  ✅    │
+│ T05 │ Tamper Detection                           │  ✅    │
+│ T06 │ Four-Pillar Lock Generation                │  ✅    │
+│ T07 │ Four-Pillar Lock Determinism               │  ✅    │
+│ T08 │ Holographic Generation (16 tokens)         │  ✅    │
+│ T09 │ Generation Determinism                     │  ✅    │
+│ T10 │ Generation Diversity (v300 vs v750)        │  ✅    │
+│ T11 │ Grounding — Numeric                        │  ✅    │
+│ T12 │ Grounding — String claim                   │  ✅    │
+│ T13 │ Full Stack Pipeline (all 4 layers)         │  ✅    │
+│ T14 │ Multi-Agent Concurrent (×3)                │  ✅    │
+│ T15 │ Audit Trail (all receipts valid)           │  ✅    │
+├─────┴────────────────────────────────────────────┴────────┤
+│  TOTAL: 15 / 15  ✅  FOUR-LAYER STACK FULLY OPERATIONAL   │
+└───────────────────────────────────────────────────────────┘
+```
+
+### Grand Total — All Three Test Suites
+
+```
+┌──────────────────────────────────────────┬────────┬────────────┐
+│ Test Suite                               │ Result │ Tests      │
+├──────────────────────────────────────────┼────────┼────────────┤
+│ Five-Pillar FDTD  (egs_gateway_hifi_test)│  ✅    │  5 /  5   │
+│ EGS OS Operations (egs_os_test)          │  ✅    │ 14 / 14   │
+│ HHAAIOS + GenAI   (hhaaios_test)         │  ✅    │ 15 / 15   │
+├──────────────────────────────────────────┼────────┼────────────┤
+│ GRAND TOTAL                              │  ✅    │ 34 / 34   │
+└──────────────────────────────────────────┴────────┴────────────┘
 ```
 
 ---
@@ -217,9 +263,13 @@ Microsoft-Silica-EGS-Gateway-Simulation/
 │   ├── __init__.py             # Meep-compatible API exports
 │   └── _core.py               # 2D TM Yee FDTD engine (pure Python + NumPy)
 ├── egs_os.py                   # EGS OS kernel — 11 syscalls, 101-Moon memory
-├── egs_os_test.py              # 14-operation OS test suite
+├── egs_os_test.py              # Second OS test — 14-operation OS suite
+├── egs_genai.py                # EGS Holographic Generative Model (Layer 3/4)
+├── hhaaios.py                  # HHAAIOS API — Layer 3 (writer/reader/verifier)
+├── hhaaios_test.py             # Third OS test — 15 HHAAIOS + GenAI tests
 ├── egs_gateway_hifi_test.py    # Five-pillar high-fidelity FDTD test suite
 ├── testing_suite.py            # Unit tests for gateway logic and FDTD backend
+├── egs_architecture_canvas.html# Interactive architecture decision canvas
 ├── EGS_GATEWAY_PAPER.md        # Full whitepaper (primer + methods + results + implications)
 └── environment.yml             # Conda env for optional MIT Meep upgrade
 ```
@@ -276,6 +326,12 @@ python testing_suite.py
 
 ```powershell
 python egs_os_test.py
+```
+
+### Run HHAAIOS + GenAI test — Third OS Test (15 operations)
+
+```powershell
+python hhaaios_test.py --resolution 10 --until 40
 ```
 
 ### Run five-pillar FDTD test

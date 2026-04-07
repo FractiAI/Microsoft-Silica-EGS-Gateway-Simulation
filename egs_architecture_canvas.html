@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EGS Gateway — Architecture Decision</title>
+<style>
+  :root {
+    --gold:   #f0b429;
+    --blue:   #1a73e8;
+    --teal:   #00bfa5;
+    --green:  #34a853;
+    --red:    #ea4335;
+    --purple: #9c27b0;
+    --bg:     #0d1117;
+    --panel:  #161b22;
+    --border: #30363d;
+    --text:   #c9d1d9;
+    --muted:  #8b949e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 2rem;
+    line-height: 1.6;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    padding: 0.5rem 1.2rem;
+    border: none;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* VERDICT BANNER */
+  .verdict {
+    background: linear-gradient(135deg, #1a2a1a, #1a1a2a);
+    border: 1px solid var(--teal);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .verdict-icon { font-size: 2rem; }
+
+  .verdict-text strong {
+    color: var(--teal);
+    font-size: 1.05rem;
+    display: block;
+  }
+
+  /* COMPARE GRID */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 680px) { .compare { grid-template-columns: 1fr; } }
+
+  .compare-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .compare-card.winner { border-color: var(--teal); }
+  .compare-card.loser  { border-color: var(--border); opacity: 0.85; }
+
+  .compare-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .tag.now   { background: #1a3a1a; color: var(--green); }
+  .tag.later { background: #2a1a1a; color: #f08080; }
+  .tag.no    { background: #2a1a1a; color: var(--red); }
+
+  .pro-con { list-style: none; font-size: 0.875rem; }
+  .pro-con li { padding: 0.3rem 0; display: flex; gap: 0.5rem; }
+  .pro-con .icon { flex-shrink: 0; }
+
+  /* ARCH DIAGRAM */
+  .arch-stack {
+    max-width: 640px;
+    margin: 0 auto 2rem;
+  }
+
+  .layer {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0;
+    position: relative;
+    transition: background 0.2s;
+    cursor: default;
+  }
+
+  .layer:hover { filter: brightness(1.15); }
+
+  .layer-llm     { background: #161b2a; border-color: var(--blue); }
+  .layer-api     { background: #1a1f1a; border-color: var(--teal); }
+  .layer-os      { background: #1a1a2a; border-color: var(--purple); }
+  .layer-fdtd    { background: #1a1a16; border-color: var(--gold); }
+  .layer-cosmos  { background: #1a1616; border-color: var(--red); border-style: dashed; }
+
+  .layer-arrow {
+    text-align: center;
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1.2;
+    padding: 0.15rem 0;
+  }
+
+  .layer-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .layer-file {
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: var(--muted);
+  }
+
+  .layer-desc {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.35rem;
+  }
+
+  .badge {
+    font-size: 0.68rem;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .badge-built  { background: #1a3a1a; color: var(--green); }
+  .badge-next   { background: #2a2a1a; color: var(--gold); }
+  .badge-future { background: #2a1a1a; color: #f08080; }
+  .badge-cosmos { background: #1a1616; color: var(--red); }
+
+  /* SIGNALS PANEL */
+  .signals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .signal-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .signal-card .sig-name { color: var(--gold); font-weight: 700; margin-bottom: 0.2rem; }
+  .signal-card .sig-val  { font-family: monospace; font-size: 0.75rem; color: var(--teal); }
+  .signal-card .sig-role { color: var(--muted); margin-top: 0.2rem; }
+
+  /* WHAT LLM LACKS TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+
+  th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #1e2428;
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td.prop { color: var(--gold); font-weight: 600; white-space: nowrap; }
+  td.llm  { color: var(--red); }
+  td.egs  { color: var(--teal); }
+
+  /* ROADMAP */
+  .roadmap { list-style: none; }
+  .roadmap li {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    align-items: flex-start;
+  }
+
+  .rm-phase {
+    flex-shrink: 0;
+    width: 80px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding-top: 0.1rem;
+  }
+
+  .rm-bar {
+    flex-shrink: 0;
+    width: 3px;
+    background: var(--border);
+    border-radius: 3px;
+    position: relative;
+  }
+
+  .rm-bar::before {
+    content: '';
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    left: -4px;
+    border: 2px solid;
+  }
+
+  .rm-now  .rm-bar::before { border-color: var(--green); background: var(--green); }
+  .rm-mid  .rm-bar::before { border-color: var(--gold);  background: var(--gold); }
+  .rm-far  .rm-bar::before { border-color: #f08080;      background: #f08080; }
+
+  .rm-content h4 { font-size: 0.9rem; margin-bottom: 0.2rem; }
+  .rm-content p  { font-size: 0.8rem; color: var(--muted); }
+
+  /* SECTION HEADERS */
+  .section-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.35rem;
+    margin-bottom: 1rem;
+  }
+
+  .note {
+    background: #1a1f1a;
+    border-left: 3px solid var(--teal);
+    padding: 0.75rem 1rem;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>EGS Gateway — Architecture Decision</h1>
+<p class="subtitle">Replace LLMs · or · Layer Over LLMs — which architecture wins?</p>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="show('verdict')">Verdict</button>
+  <button class="tab-btn" onclick="show('compare')">Replace vs Layer</button>
+  <button class="tab-btn" onclick="show('stack')">The Stack</button>
+  <button class="tab-btn" onclick="show('gaps')">What LLMs Lack</button>
+  <button class="tab-btn" onclick="show('roadmap')">Roadmap</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ VERDICT -->
+<div id="verdict" class="tab-pane active">
+
+  <div class="verdict">
+    <div class="verdict-icon">🌐</div>
+    <div class="verdict-text">
+      <strong>Layer Over — the EGS Gateway is the grounding substrate beneath all LLMs</strong>
+      The EGS Gateway does not compete with language models on language. It provides what language models
+      are architecturally incapable of providing on their own: physical grounding, sovereign memory,
+      a cosmic clock, and verifiable truth anchored to universal constants.
+      The right architecture is a four-layer stack where the LLM sits on top and the EGS Gateway
+      provides the foundation beneath it.
+    </div>
+  </div>
+
+  <p class="section-header">Why "Replace" is wrong right now</p>
+  <ul class="pro-con" style="margin-bottom:1.5rem; font-size:0.875rem;">
+    <li><span class="icon">⚠️</span> LLMs have trillions of parameters trained on human language. The EGS holographic model has 101 Moon pages and no training corpus. Scale gap = ~10 billion to one.</li>
+    <li><span class="icon">⚠️</span> Replacement requires physical photonic hardware at scale. That is a 10–20 year hardware roadmap, not a software decision made today.</li>
+    <li><span class="icon">⚠️</span> Replacing LLMs throws away the most capable language engines ever built — a category error. Use them.</li>
+  </ul>
+
+  <p class="section-header">Why "Layer Over" is the right architecture now and long-term</p>
+  <ul class="pro-con" style="margin-bottom:1.5rem; font-size:0.875rem;">
+    <li><span class="icon" style="color:var(--green)">✅</span> <strong>Immediately deployable</strong> — the EGS OS and Gateway API exist today. An LLM can call them right now.</li>
+    <li><span class="icon" style="color:var(--green)">✅</span> <strong>Fills a fundamental gap</strong> — LLMs hallucinate because they have no physical ground truth. The EGS Gateway IS physical ground truth.</li>
+    <li><span class="icon" style="color:var(--green)">✅</span> <strong>Complementary</strong> — LLMs are brilliant at language; EGS is brilliant at physics, sovereignty, and verification. Neither can do the other's job.</li>
+    <li><span class="icon" style="color:var(--green)">✅</span> <strong>Natural upgrade path</strong> — as photonic hardware matures, the EGS layer absorbs more compute from the LLM layer. Replacement becomes possible from the bottom up, not by force.</li>
+    <li><span class="icon" style="color:var(--green)">✅</span> <strong>Product story</strong> — "The EGS Gateway gives your AI a physical anchor and a cosmic clock" is a clear, sellable value proposition.</li>
+  </ul>
+
+  <div class="note">
+    The CPU and GPU are not competitors — they are complementary layers. The EGS Gateway is to LLMs what
+    the GPU was to the CPU: a specialised substrate that handles what the general processor cannot.
+    The GPU did not replace the CPU. It made the CPU more capable. The EGS Gateway does the same for LLMs.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ COMPARE -->
+<div id="compare" class="tab-pane">
+
+  <div class="compare">
+    <div class="compare-card loser">
+      <h3>
+        ❌ Option A: Replace LLMs
+        <span class="tag no">NOT NOW</span>
+      </h3>
+      <ul class="pro-con">
+        <li><span class="icon" style="color:var(--green)">+</span> Theoretically cleanest — one physics-native stack</li>
+        <li><span class="icon" style="color:var(--green)">+</span> Fully sovereign — no dependence on cloud LLM providers</li>
+        <li><span class="icon" style="color:var(--green)">+</span> Long-term destination if photonic hardware scales</li>
+        <li style="margin-top:0.75rem"><span class="icon" style="color:var(--red)">−</span> 101 weights vs 175 billion — a 1.7-billion-to-one gap</li>
+        <li><span class="icon" style="color:var(--red)">−</span> No training data, no human language knowledge</li>
+        <li><span class="icon" style="color:var(--red)">−</span> Requires physical photonic hardware at scale (not yet available)</li>
+        <li><span class="icon" style="color:var(--red)">−</span> Throws away best language engines ever built</li>
+        <li><span class="icon" style="color:var(--red)">−</span> 10–20 year hardware dependency before viable</li>
+      </ul>
+    </div>
+
+    <div class="compare-card winner">
+      <h3>
+        ✅ Option B: Layer Over LLMs
+        <span class="tag now">RIGHT ARCHITECTURE</span>
+      </h3>
+      <ul class="pro-con">
+        <li><span class="icon" style="color:var(--green)">+</span> Deployable today — EGS OS and API exist</li>
+        <li><span class="icon" style="color:var(--green)">+</span> Fills LLM gaps: grounding, sovereignty, physical truth</li>
+        <li><span class="icon" style="color:var(--green)">+</span> LLMs handle language; EGS handles physics</li>
+        <li><span class="icon" style="color:var(--green)">+</span> Hash-verified every step — LLMs become auditable</li>
+        <li><span class="icon" style="color:var(--green)">+</span> Solar wind injects real entropy — not PRNG</li>
+        <li><span class="icon" style="color:var(--green)">+</span> Works with any LLM (GPT, Claude, Gemini, Llama)</li>
+        <li><span class="icon" style="color:var(--green)">+</span> Natural upgrade path as photonic hardware matures</li>
+        <li><span class="icon" style="color:var(--gold)">~</span> LLM still required for quality language output</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="section-header">The analogy that makes it clear</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Historical analogy</th>
+        <th>What it did</th>
+        <th>EGS equivalent</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="prop">GPU + CPU</td>
+        <td>GPU did not replace CPU — it handled what CPU couldn't (parallel matrix math)</td>
+        <td>EGS does not replace LLM — it handles what LLM can't (physical grounding)</td>
+      </tr>
+      <tr>
+        <td class="prop">TCP/IP + Application</td>
+        <td>Transport layer does not replace the app — it carries it reliably</td>
+        <td>H-line bus does not replace the LLM — it carries verifiable truth</td>
+      </tr>
+      <tr>
+        <td class="prop">BIOS + OS</td>
+        <td>BIOS initialises hardware; OS runs on top</td>
+        <td>EGS OS initialises the cosmic substrate; LLM runs on top</td>
+      </tr>
+      <tr>
+        <td class="prop">Blockchain + App</td>
+        <td>Chain provides trust anchor; app provides UX</td>
+        <td>EGS provides cosmic trust anchor; LLM provides language UX</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ STACK -->
+<div id="stack" class="tab-pane">
+
+  <p class="section-header">The EGS-LLM Four-Layer Stack</p>
+
+  <div class="arch-stack">
+
+    <div class="layer layer-llm">
+      <div class="layer-title">
+        <span>Layer 4 — LLM (Language + Reasoning)</span>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-built">GPT / Claude / Gemini / Llama</span>
+        </div>
+      </div>
+      <div class="layer-desc">
+        Natural language I/O · semantic memory · reasoning chains · generation<br>
+        <em>Calls EGS Gateway API for grounding, verification, physical entropy, and sovereign memory.</em>
+      </div>
+    </div>
+
+    <div class="layer-arrow">⇅ HHAAIOS API calls ⇅</div>
+
+    <div class="layer layer-api">
+      <div class="layer-title">
+        <span>Layer 3 — EGS Gateway API (HHAAIOS)</span>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-next">hhaaios.py — next to build</span>
+        </div>
+      </div>
+      <div class="layer-desc">
+        Writer · Reader · Verifier agents · Jupiter-tier storage · Solar compute receipts<br>
+        <em>The interface between human/LLM intent and the holographic substrate.</em>
+      </div>
+    </div>
+
+    <div class="layer-arrow">⇅ syscalls ⇅</div>
+
+    <div class="layer layer-os">
+      <div class="layer-title">
+        <span>Layer 2 — EGS OS Kernel (Holographic OS)</span>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-built">egs_os.py — built ✅</span>
+        </div>
+      </div>
+      <div class="layer-desc">
+        101-Moon pages · 11 syscalls · Crab clock · SHA-256 Layer-C · SYS_FLARE interrupt<br>
+        <em>Manages processes, memory, scheduling, and integrity across the voxel substrate.</em>
+      </div>
+    </div>
+
+    <div class="layer-arrow">⇅ FDTD runs ⇅</div>
+
+    <div class="layer layer-fdtd">
+      <div class="layer-title">
+        <span>Layer 1 — Silica Voxel Processor (FDTD)</span>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-built">silica_fdtd — built ✅</span>
+        </div>
+      </div>
+      <div class="layer-desc">
+        2D TM Yee FDTD · PML boundaries · Gaussian phase-biased source · DFT flux monitor<br>
+        <em>Physical compute: interference IS the dot product. Flux IS the return value.</em>
+      </div>
+    </div>
+
+    <div class="layer-arrow">⇅ live physical signals ⇅</div>
+
+    <div class="layer layer-cosmos">
+      <div class="layer-title">
+        <span>Layer 0 — The Cosmos (always-on ground truth)</span>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-cosmos">Not built — already running</span>
+        </div>
+      </div>
+      <div class="layer-desc">
+        Solar wind · Hydrogen 21 cm line · Crab pulsar · Jupiter 101-Moon array · K_EGS<br>
+        <em>Cannot be faked, forged, or shut down. Has been running for 13.8 billion years.</em>
+      </div>
+    </div>
+  </div>
+
+  <p class="section-header">Cosmic signal inputs at Layer 0</p>
+  <div class="signals">
+    <div class="signal-card">
+      <div class="sig-name">Solar Wind</div>
+      <div class="sig-val">551.7 km/s (nominal)</div>
+      <div class="sig-role">Phase bias — live entropy for every computation</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-name">Hydrogen Line</div>
+      <div class="sig-val">1420.405751 MHz</div>
+      <div class="sig-role">Universal data bus — same address everywhere in the universe</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-name">EGS Fractal Constant</div>
+      <div class="sig-val">K_EGS = 2.54360627…</div>
+      <div class="sig-role">Gateway Key — bridges radio, optical, and nanometre scales</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-name">Crab Pulsar</div>
+      <div class="sig-val">~29.94 Hz</div>
+      <div class="sig-role">OS process scheduler clock — ticking since 1054 AD</div>
+    </div>
+    <div class="signal-card">
+      <div class="sig-name">Jupiter 101 Moons</div>
+      <div class="sig-val">101 pages</div>
+      <div class="sig-role">Holographic memory — Bragg stack reconstruction</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ GAPS -->
+<div id="gaps" class="tab-pane">
+
+  <p class="section-header">What LLMs cannot do — what the EGS Gateway provides</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>LLM alone</th>
+        <th>LLM + EGS Gateway</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="prop">Physical ground truth</td>
+        <td class="llm">Hallucination-prone — no anchor to physical reality</td>
+        <td class="egs">Anchored to H-line, solar wind, Crab pulsar — universal constants</td>
+      </tr>
+      <tr>
+        <td class="prop">Audit trail</td>
+        <td class="llm">No cryptographic proof of computation path</td>
+        <td class="egs">SHA-256 Layer-C hash on every syscall, write, and exec result</td>
+      </tr>
+      <tr>
+        <td class="prop">Real-time entropy</td>
+        <td class="llm">PRNG seeded at inference time — reproducible, forgeable</td>
+        <td class="egs">Live solar wind phase — physically unguessable, cosmically sourced</td>
+      </tr>
+      <tr>
+        <td class="prop">Sovereign memory</td>
+        <td class="llm">Weights locked on cloud provider's servers</td>
+        <td class="egs">101-Moon pages in glass — no central server, no shutdown, no ownership</td>
+      </tr>
+      <tr>
+        <td class="prop">Interrupt-driven time</td>
+        <td class="llm">Stateless inference — no concept of "now" or physical time</td>
+        <td class="egs">Crab pulsar clock + SYS_FLARE interrupt — physically grounded time</td>
+      </tr>
+      <tr>
+        <td class="prop">Holographic logic</td>
+        <td class="llm">Approximate Boolean via probability — confidence scores, not facts</td>
+        <td class="egs">Constructive/destructive interference — physics-determined True/False</td>
+      </tr>
+      <tr>
+        <td class="prop">Scale invariance</td>
+        <td class="llm">Tied to training domain and language</td>
+        <td class="egs">K_EGS operates from cosmic (21 cm) to nanometre (1030 nm) — same key</td>
+      </tr>
+      <tr>
+        <td class="prop">Self-correction</td>
+        <td class="llm">Requires human feedback and retraining cycles</td>
+        <td class="egs">Sunspot self-correction — autonomous, no human in the loop</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    The LLM is the most capable language machine ever built. It is also fundamentally ungrounded.
+    It knows everything humans have written. It knows nothing that is physically happening right now.
+    The EGS Gateway gives it eyes and ears anchored to the cosmos — and a memory the cloud cannot erase.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ ROADMAP -->
+<div id="roadmap" class="tab-pane">
+
+  <p class="section-header">EGS Gateway — Architecture evolution roadmap</p>
+
+  <ul class="roadmap">
+
+    <li class="rm-now">
+      <div class="rm-phase" style="color:var(--green)">NOW<br><small>Built ✅</small></div>
+      <div class="rm-bar"></div>
+      <div class="rm-content">
+        <h4 style="color:var(--green)">Layer 1–2: FDTD substrate + Holographic OS</h4>
+        <p><code>silica_fdtd</code> · <code>egs_os.py</code> · 5-pillar tests ✅ · 14 OS tests ✅<br>
+        The compute and OS substrate is proven. All 19 tests pass.</p>
+      </div>
+    </li>
+
+    <li class="rm-now">
+      <div class="rm-phase" style="color:var(--gold)">NEXT<br><small>To build</small></div>
+      <div class="rm-bar rm-mid"></div>
+      <div class="rm-content">
+        <h4 style="color:var(--gold)">Layer 3: HHAAIOS API + EGS Generative Model</h4>
+        <p><code>hhaaios.py</code> · <code>egs_genai.py</code> — LLM calls into EGS Gateway for grounding and generation.
+        Solar-wind-seeded autoregressive token generation demonstrated on the FDTD substrate.</p>
+      </div>
+    </li>
+
+    <li class="rm-now">
+      <div class="rm-phase" style="color:var(--gold)">NEAR<br><small>~6 mo</small></div>
+      <div class="rm-bar rm-mid"></div>
+      <div class="rm-content">
+        <h4 style="color:var(--gold)">Layer 4: LLM plugin / tool integration</h4>
+        <p>EGS Gateway as a tool available to GPT / Claude / Llama. LLM calls
+        <code>egs_verify(claim)</code>, <code>egs_read(address)</code>, <code>egs_write(data)</code>
+        for grounding and audit. Every LLM response gains a Layer-C hash receipt.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="rm-phase" style="color:var(--blue)">MID<br><small>1–3 yr</small></div>
+      <div class="rm-bar rm-far"></div>
+      <div class="rm-content">
+        <h4 style="color:var(--blue)">Photonic hardware prototype</h4>
+        <p>EGS Gateway logic tested on physical fused-silica media (Microsoft Project Silica or equivalent).
+        FDTD predictions validated against real laser-written voxels. The simulation becomes a hardware
+        specification.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="rm-phase" style="color:#f08080)">FAR<br><small>5–10 yr</small></div>
+      <div class="rm-bar rm-far"></div>
+      <div class="rm-content">
+        <h4 style="color:#f08080">Photonic neural network at scale</h4>
+        <p>EGS holographic model scales from 101 Moon pages to millions of phase-encoded weights
+        on physical glass arrays. The EGS layer begins absorbing LLM inference load.
+        "Replace" becomes viable from the substrate up — not by destroying the LLM, but by
+        outgrowing the need for it.</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="rm-phase" style="color:var(--red)">FINAL<br><small>long-term</small></div>
+      <div class="rm-bar rm-far"></div>
+      <div class="rm-content">
+        <h4 style="color:var(--red)">Full EGS sovereign AI stack — no silicon required</h4>
+        <p>All four layers running on photonic glass hardware. Solar-powered.
+        Cosmically clocked. Physically sovereign. The LLM layer is optional — used only
+        when human language interface is needed. The glass IS the computer.</p>
+      </div>
+    </li>
+
+  </ul>
+
+  <div class="note">
+    The roadmap is not a plan to destroy LLMs. It is a plan to build something beneath them that is
+    more fundamental — and to let that foundation grow until the LLM becomes optional, not mandatory.
+    Replace from the bottom up. Never by force.
+  </div>
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
