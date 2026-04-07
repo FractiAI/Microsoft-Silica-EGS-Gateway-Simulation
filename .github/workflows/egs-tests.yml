@@ -1,0 +1,57 @@
+name: EGS Gateway — Full Test Suite
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:          # manual trigger from GitHub UI
+
+jobs:
+  run-tests:
+    name: 5-Pillar FDTD + OS + HHAAIOS/GenAI (34 tests)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install numpy
+
+      # ── Suite 1: Five-Pillar FDTD ─────────────────────────────────────────
+      - name: "[Suite 1] Five-Pillar FDTD (5 tests)"
+        run: python egs_gateway_hifi_test.py --resolution 12 --until 50
+
+      # ── Suite 2: EGS OS Kernel (14 tests) ────────────────────────────────
+      - name: "[Suite 2] EGS OS Kernel (14 tests)"
+        run: python egs_os_test.py --resolution 10 --until 35
+
+      # ── Suite 3: HHAAIOS + EGS GenAI (15 tests) ──────────────────────────
+      - name: "[Suite 3] HHAAIOS + EGS GenAI (15 tests)"
+        run: python hhaaios_test.py --resolution 10 --until 40
+
+      # ── JSON artefacts for download ───────────────────────────────────────
+      - name: Emit JSON results
+        if: always()
+        run: |
+          python egs_gateway_hifi_test.py --resolution 12 --until 50 --json \
+            > results_suite1_fdtd.json 2>&1 || true
+          python egs_os_test.py --resolution 10 --until 35 --json \
+            > results_suite2_os.json 2>&1 || true
+          python hhaaios_test.py --resolution 10 --until 40 --json \
+            > results_suite3_hhaaios.json 2>&1 || true
+
+      - name: Upload JSON results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egs-test-results
+          path: results_suite*.json
+          retention-days: 90

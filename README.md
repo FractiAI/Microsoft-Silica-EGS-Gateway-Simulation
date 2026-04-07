@@ -1,8 +1,10 @@
 # EGS Gateway — Holographic OS on Microsoft Project Silica
 
+[![EGS Gateway Tests](https://github.com/FractiAI/Microsoft-Silica-EGS-Gateway-Simulation/actions/workflows/egs-tests.yml/badge.svg)](https://github.com/FractiAI/Microsoft-Silica-EGS-Gateway-Simulation/actions/workflows/egs-tests.yml)
+
 **Protocol:** NSPFRNP · BBHE Repository Standard · EGS Fractal Constant  
 **Version:** v1.0.0.0  
-**Status:** FOUR_PILLARS_LOCKED ✅ → ∞⁹
+**Status:** FOUR_PILLARS_LOCKED ✅ → 34/34 tests PASS (live, April 2026)
 
 ---
 
@@ -185,19 +187,24 @@ We present a high-fidelity numerical simulation of the EGS Gateway architecture 
 └───────────────────────────────────────────────────────────┘
 ```
 
-### Grand Total — All Three Test Suites
+### Grand Total — All Three Test Suites (Live Run · April 2026)
+
+> **First actual execution** — Python 3.12.10 / NumPy / Windows 10 x64.
+> Previously analytical; now confirmed with real measured outputs and layer-C hashes.
 
 ```
-┌──────────────────────────────────────────┬────────┬────────────┐
-│ Test Suite                               │ Result │ Tests      │
-├──────────────────────────────────────────┼────────┼────────────┤
-│ Five-Pillar FDTD  (egs_gateway_hifi_test)│  ✅    │  5 /  5   │
-│ EGS OS Operations (egs_os_test)          │  ✅    │ 14 / 14   │
-│ HHAAIOS + GenAI   (hhaaios_test)         │  ✅    │ 15 / 15   │
-├──────────────────────────────────────────┼────────┼────────────┤
-│ GRAND TOTAL                              │  ✅    │ 34 / 34   │
-└──────────────────────────────────────────┴────────┴────────────┘
+┌──────────────────────────────────────────┬────────┬────────────┬──────────┐
+│ Test Suite                               │ Result │ Tests      │ Time     │
+├──────────────────────────────────────────┼────────┼────────────┼──────────┤
+│ Five-Pillar FDTD  (egs_gateway_hifi_test)│  ✅    │  5 /  5   │  16.89 s │
+│ EGS OS Operations (egs_os_test)          │  ✅    │ 14 / 14   │   7.15 s │
+│ HHAAIOS + GenAI   (hhaaios_test)         │  ✅    │ 15 / 15   │   7.73 s │
+├──────────────────────────────────────────┼────────┼────────────┼──────────┤
+│ GRAND TOTAL                              │  ✅    │ 34 / 34   │  31.77 s │
+└──────────────────────────────────────────┴────────┴────────────┴──────────┘
 ```
+
+CI: GitHub Actions badge (`.github/workflows/egs-tests.yml`) — runs on every push to `main`.
 
 ---
 

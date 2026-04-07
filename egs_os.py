@@ -153,12 +153,22 @@ class MoonPage:
         return self.owner_pid == -1
 
     def write(self, value: float, owner_pid: int) -> str:
+        """Write value and take ownership (used by SYS_WRITE, SYS_EXEC, boot)."""
         self.value      = value
         self.owner_pid  = owner_pid
         self.value_hash = hashlib.sha256(
             json.dumps({"addr": self.address, "val": value}).encode()
         ).hexdigest()[:16]
         self.record_id  = f"moon/{self.address:03d}/{owner_pid}"
+        return self.value_hash
+
+    def write_value_only(self, value: float) -> str:
+        """Update value and hash WITHOUT changing ownership.
+        Used by flare/sunspot correction so process allocations are preserved."""
+        self.value      = value
+        self.value_hash = hashlib.sha256(
+            json.dumps({"addr": self.address, "val": value}).encode()
+        ).hexdigest()[:16]
         return self.value_hash
 
     def clear(self) -> None:
@@ -274,17 +284,27 @@ class EGSKernel:
         Boot the EGS OS.
 
         1. Burns master fractal from AR14409 seed (101 values → OS image).
-        2. Writes each value to its Moon page (cold storage, Layer C hashed).
-        3. Spawns kernel process (PID 0) and init process (PID 1).
+        2. Pre-loads each Moon page with its fractal value; pages remain FREE
+           (owner_pid = -1) so processes can allocate them.  Only page 0 is
+           reserved for the kernel.
+        3. Spawns kernel process (PID 0, page 0) and init process (PID 1).
         4. Sets epoch = 0, tick = 0.
         """
         self._master = burn_master_fractal(seed=OS_SEED, length=OS_MASTER_LEN)
 
-        # Write OS image to Moon storage
+        # Pre-load OS image into Moon pages.
+        # Values and hashes are set, but owner_pid stays -1 (free) so that
+        # processes can allocate pages via SYS_MALLOC / SYS_FORK.
         for i, val in enumerate(self._master):
-            self._memory[i].write(val, KERNEL_PID)
+            self._memory[i].value = val
+            self._memory[i].value_hash = hashlib.sha256(
+                json.dumps({"addr": i, "val": val}).encode()
+            ).hexdigest()[:16]
+            self._memory[i].record_id = f"moon/{i:03d}/boot"
+            # owner_pid stays -1 (free)
 
-        # Kernel PCB (PID 0)
+        # Kernel PCB (PID 0) — claims page 0 exclusively
+        self._memory[0].owner_pid = KERNEL_PID
         self._processes[KERNEL_PID] = PCB(
             pid        = KERNEL_PID,
             name       = "kernel",
@@ -295,7 +315,7 @@ class EGSKernel:
             solar_wind = solar_wind,
         )
 
-        # Init PCB (PID 1)
+        # Init PCB (PID 1) — allocates the first free page (page 1)
         init_phase = self._phase_for_pid(INIT_PID)
         init_page  = self._alloc_page(INIT_PID)
         self._processes[INIT_PID] = PCB(
@@ -672,9 +692,9 @@ class EGSKernel:
                 p.solar_wind = self._wind_for_phase(p.phase_rad)
                 affected.append(p.pid)
 
-        # Write corrected master back to Moon pages
+        # Refresh Moon page values with corrected master (ownership unchanged)
         for i, val in enumerate(self._master):
-            self._memory[i].write(val, KERNEL_PID)
+            self._memory[i].write_value_only(val)
 
         return SyscallResult(
             syscall = SYS.FLARE,

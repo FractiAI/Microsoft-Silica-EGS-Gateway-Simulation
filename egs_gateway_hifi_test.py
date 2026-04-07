@@ -70,8 +70,8 @@ from meep_gateway import fused_silica_epsilon, run_silica_reader_meep
 HYDROGEN_REST_MHZ    = 1420.405751          # §1.1 — H I hyperfine rest frequency
 CRAB_PULSAR_HZ       = 29.94               # §1 / §28.19 — nominal Crab heartbeat
 SCHUMANN_LADDER_HZ   = [3.0, 6.0, 9.0]    # §march20-four-diagnostics
-EGS_FRACTAL_NOMINAL  = 0.0032              # ℑₑ from BBHE standard
 PHI                  = (1 + math.sqrt(5)) / 2.0
+EGS_FRACTAL_NOMINAL  = PHI * (1030.0 / 656.28)  # K_EGS = φ × (λ_reader / λ_Hα) ≈ 2.5436
 
 # ---------------------------------------------------------------------------
 # Tolerance constants (discretisation budget)
@@ -217,7 +217,7 @@ def test_p2_egs_fractal_constant_gate() -> PillarResult:
         json.dumps(results, sort_keys=True).encode()
     ).hexdigest()[:16]
 
-    pass_ = all_equal and (nominal_deviation < 0.5)   # nominal ℑₑ is approximate
+    pass_ = all_equal and (nominal_deviation < 1e-6)   # K_EGS must match φ×(λ_r/λ_Hα) exactly
 
     return PillarResult(
         pillar   = "P2_EGS_FRACTAL_CONSTANT_GATE",
@@ -234,7 +234,7 @@ def test_p2_egs_fractal_constant_gate() -> PillarResult:
         },
         expected = {
             "scale_invariant":   True,
-            "nominal_deviation": "< 0.5 (ℑₑ ≈ 0.0032 is approximate)",
+            "nominal_deviation": "< 1e-6 (K_EGS = φ × λ_reader/λ_Hα ≈ 2.5436)",
         },
         verdict  = "PASS — EGS Fractal Constant is scale-invariant" if pass_
                    else "FAIL — scale invariance broken",

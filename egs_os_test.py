@@ -432,7 +432,7 @@ def t14_multi_process(k: EGSKernel) -> dict:
         rf = k.fork(INIT_PID, name=f"mp-worker-{i}")
         worker_pids.append(int(rf.retval))
 
-    exec_results = k.schedule(n_ticks=5)   # exec up to 5 ready procs
+    exec_results = k.schedule(n_ticks=15)  # exec all ready procs (prev tests leave READY backlog)
     exec_pids    = {int(r.pid) for r in exec_results}
     workers_ran  = all(p in exec_pids for p in worker_pids)
     all_finite   = all(math.isfinite(r.retval) for r in exec_results)
