@@ -278,6 +278,7 @@ Microsoft-Silica-EGS-Gateway-Simulation/
 ├── testing_suite.py            # Unit tests for gateway logic and FDTD backend
 ├── egs_architecture_canvas.html# Interactive architecture decision canvas
 ├── EGS_GATEWAY_PAPER.md        # Full whitepaper (primer + methods + results + implications)
+├── EGS_SYSTEM_PROGRAMMER_GUIDE.md  # Complete API & programmer reference (14 chapters)
 └── environment.yml             # Conda env for optional MIT Meep upgrade
 ```
 
@@ -364,6 +365,33 @@ conda env create -f environment.yml
 conda activate egs-meep
 python egs_gateway_hifi_test.py
 ```
+
+---
+
+## System Programmer's Guide
+
+`EGS_SYSTEM_PROGRAMMER_GUIDE.md` — *Complete technical reference for programmers integrating with or extending the EGS Gateway system.*
+
+| Chapter | Coverage |
+|---|---|
+| Ch 1 — System Overview | Capabilities, design philosophy, four-layer stack diagram |
+| Ch 2 — Physical Architecture | Layer 0–4 detailed; Yee grid geometry; OS primitive mapping |
+| Ch 3 — Physical Constants | Every constant with type, value, derivation, and formula |
+| Ch 4 — Installation | Windows/Linux/macOS setup; FDTD performance tuning guide |
+| Ch 5 — `silica_fdtd` Engine | All classes, parameters, full FDTD simulation example |
+| Ch 6 — EGS Gateway Core | `gateway_filter`, `holographic_gate`, `burn_master_fractal`, all functions |
+| Ch 7 — EGS OS Kernel | `EGSKernel`, all 11 syscalls, `PCB`, `MoonPage`, `SyscallResult` |
+| Ch 8 — HHAAIOS API | `HHAAIOSAgent`, `SolarReceipt`, `FourPillarLock`, all methods |
+| Ch 9 — GenAI Model | `EGSHolographicLM`, `GenerationResult`, generation algorithm |
+| Ch 10 — Patterns & Examples | 8 complete working examples including Layer 4 LLM tool call |
+| Ch 11 — Test Suite Reference | All 34 tests across three suites, CI integration |
+| Ch 12 — Layer-C Integrity | Hash computation, offline verification, honesty boundary |
+| Ch 13 — Error Reference | Every error string, cause, and resolution |
+| Ch 14 — Troubleshooting | Installation, FDTD, OS kernel, HHAAIOS common issues |
+| Appendix A | Complete constant quick-reference tables |
+| Appendix B | Syscall quick-reference table (all 11 syscalls) |
+| Appendix C | File inventory with descriptions |
+| Appendix D | Glossary of all technical terms |
 
 ---
 
