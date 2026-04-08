@@ -279,7 +279,6 @@ Microsoft-Silica-EGS-Gateway-Simulation/
 ├── egs_architecture_canvas.html# Interactive architecture decision canvas
 ├── EGS_GATEWAY_PAPER.md        # Full whitepaper (primer + methods + results + implications)
 ├── EGS_SYSTEM_PROGRAMMER_GUIDE.md  # Complete API & programmer reference (14 chapters)
-├── vibelandia_prospectus.html  # Mark Twain's Vibelandia — Downtown Reno prospectus (brochure)
 └── environment.yml             # Conda env for optional MIT Meep upgrade
 ```
 
