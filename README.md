@@ -1,5 +1,12 @@
 # EGS Gateway — Holographic OS on Microsoft Project Silica
 
+<!-- NOTE TO SELF: The Vibelandia prospectus (Mark Twain's Vibelandia Downtown Reno)
+     belongs in the psw.vibelandia.sing9 repo — https://github.com/FractiAI/psw.vibelandia.sing9
+     Specifically: interfaces/vibelandia-world.html is the world landing page (the whiteboard).
+     The prospectus button goes there, not here. Brand directives to preserve:
+     (1) gateway to freedom / gateway to paradise vibe in all images and content
+     (2) represents a NEW, AMPLIFYING, HARMONIZING layer — not competition, not redundant. -->
+
 [![EGS Gateway Tests](https://github.com/FractiAI/Microsoft-Silica-EGS-Gateway-Simulation/actions/workflows/egs-tests.yml/badge.svg)](https://github.com/FractiAI/Microsoft-Silica-EGS-Gateway-Simulation/actions/workflows/egs-tests.yml)
 
 **Protocol:** NSPFRNP · BBHE Repository Standard · EGS Fractal Constant  
