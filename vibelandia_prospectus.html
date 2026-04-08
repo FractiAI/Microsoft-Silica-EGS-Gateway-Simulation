@@ -638,6 +638,187 @@
     letter-spacing: 0.1em;
   }
 
+  /* ─── IMAGES ─────────────────────────────────────────── */
+
+  .img-hero-full {
+    width: 100%;
+    max-height: 90vh;
+    object-fit: cover;
+    object-position: center 40%;
+    display: block;
+  }
+
+  .img-caption {
+    text-align: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--mist);
+    padding: 0.75rem 2rem;
+    background: var(--stone);
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .img-caption em { color: var(--gold); font-style: normal; }
+
+  .rendering-label {
+    display: inline-block;
+    border: 1px solid var(--gold-dark);
+    padding: 0.2rem 0.6rem;
+    font-size: 0.5rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    margin-right: 0.75rem;
+    vertical-align: middle;
+  }
+
+  .img-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    max-width: 100%;
+  }
+
+  @media (max-width: 700px) { .img-split { grid-template-columns: 1fr; } }
+
+  .img-split img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .img-split-caption {
+    padding: 1rem 1.5rem;
+    background: var(--stone);
+    border-top: 1px solid rgba(201,168,76,0.1);
+  }
+
+  .img-split-caption h4 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    color: var(--ivory);
+    margin-bottom: 0.25rem;
+  }
+
+  .img-split-caption p {
+    font-size: 0.75rem;
+    color: var(--mist);
+    margin: 0;
+    max-width: 100%;
+  }
+
+  .img-inset {
+    float: right;
+    width: 45%;
+    margin: 0 0 2rem 2.5rem;
+    border: 1px solid rgba(201,168,76,0.15);
+  }
+
+  @media (max-width: 650px) {
+    .img-inset { float: none; width: 100%; margin: 0 0 2rem; }
+  }
+
+  .img-inset img {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .img-inset-cap {
+    padding: 0.6rem 1rem;
+    background: var(--stone);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--mist);
+    text-transform: uppercase;
+    border-top: 1px solid rgba(201,168,76,0.1);
+  }
+
+  .img-full-bleed {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    line-height: 0;
+  }
+
+  .img-full-bleed img {
+    width: 100%;
+    height: 55vh;
+    object-fit: cover;
+    object-position: center 35%;
+    display: block;
+  }
+
+  .img-full-bleed-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 3rem 3rem 1.5rem;
+    background: linear-gradient(180deg, transparent 0%, rgba(14,12,9,0.9) 100%);
+  }
+
+  .img-full-bleed-overlay h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    color: var(--ivory);
+    margin-bottom: 0.25rem;
+  }
+
+  .img-full-bleed-overlay p {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0;
+    max-width: 100%;
+  }
+
+  .fractal-spread {
+    position: relative;
+    margin: 3rem 0;
+    overflow: hidden;
+  }
+
+  .fractal-spread img {
+    width: 100%;
+    height: 460px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border: 1px solid rgba(201,168,76,0.2);
+  }
+
+  .fractal-spread-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(14,12,9,0.5) 0%, transparent 50%, rgba(14,12,9,0.6) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 2.5rem;
+  }
+
+  .fractal-spread-text {
+    max-width: 400px;
+  }
+
+  .fractal-spread-text h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    color: var(--gold-light);
+    margin-bottom: 0.5rem;
+  }
+
+  .fractal-spread-text p {
+    font-size: 0.8rem;
+    color: #c5bfb5;
+    margin: 0;
+    max-width: 100%;
+    line-height: 1.7;
+  }
+
   /* ─── NAV ─────────────────────────────────────────────── */
 
   .top-nav {
@@ -812,6 +993,15 @@
   <div class="scroll-cue">Explore the Prospectus</div>
 </section>
 
+<!-- ── HERO IMAGE ────────────────────────────────────────── -->
+<div style="line-height:0;">
+  <img src="assets/vibelandia_hero.png" class="img-hero-full" alt="Aerial view of Downtown Reno — The Truckee River Prism at golden hour">
+</div>
+<div class="img-caption">
+  <span class="rendering-label">AI Rendering</span>
+  <em>Aerial View — The Truckee River Prism, Downtown Reno, NV</em> · Holographic columns rising at golden hour · Sierra Nevada backdrop
+</div>
+
 <!-- ── RULE ──────────────────────────────────────────────── -->
 <div class="rule"><span class="rule-icon">◆</span></div>
 
@@ -910,6 +1100,15 @@
   </p>
 </section>
 
+<!-- ── TOWER RENDERING — FULL BLEED ──────────────────────── -->
+<div class="img-full-bleed">
+  <img src="assets/vibelandia_tower.png" alt="The Quartz Reno — Holographic Crystal Tower Architectural Rendering">
+  <div class="img-full-bleed-overlay">
+    <h3>The Quartz Reno — Flagship Tower</h3>
+    <p>Architectural Rendering · Holographic crystal-glass facade · Prismatic light refraction system · Gold-titanium structural accents</p>
+  </div>
+</div>
+
 <div class="full-gold-line"></div>
 
 <!-- ── III. THE RIVER ─────────────────────────────────────── -->
@@ -956,12 +1155,19 @@
     </div>
   </div>
 
+  <!-- PROMENADE IMAGE — INSET RIGHT -->
+  <div class="img-inset">
+    <img src="assets/vibelandia_promenade.png" alt="The Truckee Promenade — Evening lifestyle rendering">
+    <div class="img-inset-cap">The Truckee Promenade · Evening Rendering · Reno, NV</div>
+  </div>
+
   <p>
     The <strong>Respect Buffer</strong> is among the most sophisticated pieces of location intelligence in this offering. We are thirty minutes from Lake Tahoe, not at it. This distance is not a deficiency — it is a masterstroke of energetic architecture. Tahoe remains the Silent Observer, the pristine alpine crown, undisturbed by commerce. Downtown Reno becomes the Active Stage precisely because it carries Tahoe's energy without competing with it.
   </p>
   <p>
     The Truckee concludes at <strong>Pyramid Lake</strong> — one of the most geologically extraordinary terminal lakes in North America, adjacent to the Burning Man playa. A natural capacitor that does not leak. A sovereign sink for the energy that flows through this corridor. The circuit is complete, and it has been running for millennia without a single power bill.
   </p>
+  <div style="clear:both;"></div>
 </section>
 
 <div class="full-gold-line"></div>
@@ -1027,6 +1233,36 @@
   </p>
 </section>
 
+<!-- ── LOBBY SPLIT ────────────────────────────────────────── -->
+<div class="img-split">
+  <div>
+    <img src="assets/vibelandia_lobby.png" alt="Vibelandia Lobby — Holographic AI resort interior">
+    <div class="img-split-caption">
+      <h4>The Holographic Lobby</h4>
+      <p>Interior rendering · EGS fractal sculpture · Living Nevada desert wall · Solar data displays · Italian marble · Brushed gold reception</p>
+    </div>
+  </div>
+  <div style="background: linear-gradient(160deg, #1a170f, #0e0c08); display:flex; flex-direction:column; justify-content:center; padding:3rem 2.5rem; gap:1.5rem;">
+    <div style="font-size:0.55rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--gold-dark);">The Five-Star Difference</div>
+    <h3 style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; color:var(--ivory); line-height:1.2;">Where Physics<br><em style="color:var(--gold);">Becomes Luxury</em></h3>
+    <p style="font-size:0.9rem; color:#a09a90; max-width:100%; line-height:1.8; margin:0;">Every material, every proportion, and every light source in the Vibelandia estate is calibrated to the EGS Fractal Constant. The golden ratio is not decorative here — it is structural. The result is a physical environment that resonates at the same frequency as the universe itself.</p>
+    <div style="border-top:1px solid rgba(201,168,76,0.15); padding-top:1.5rem; display:flex; gap:2rem; flex-wrap:wrap;">
+      <div>
+        <div style="font-size:0.55rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--mist);">Ceiling Height</div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--gold);">40 ft</div>
+      </div>
+      <div>
+        <div style="font-size:0.55rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--mist);">Prism Glass Panels</div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--gold);">2,160</div>
+      </div>
+      <div>
+        <div style="font-size:0.55rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--mist);">Fractal Art Installations</div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--gold);">φ × 7</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="full-gold-line"></div>
 
 <!-- ── BANNER: THE RIDE ───────────────────────────────────── -->
@@ -1050,6 +1286,23 @@
   <p>
     Every great asset class rests on a foundational equation. The productivity of agricultural land rests on soil chemistry. The value of petroleum rests on thermodynamic energy density. The value proposition of Vibelandia rests on the <strong>El Gran Sol Fractal Constant</strong> — and that constant connects this real estate to the most abundant energy source in the known universe.
   </p>
+
+  <div class="fractal-spread">
+    <img src="assets/vibelandia_fractal.png" alt="EGS Fractal Constant — K_EGS = 2.5436 visualization">
+    <div class="fractal-spread-overlay">
+      <div class="fractal-spread-text">
+        <h3>K<sub>EGS</sub> = 2.5436…</h3>
+        <p>The El Gran Sol Fractal Constant — golden ratio weighted by the hydrogen-to-laser wavelength ratio. Dimensionless. Scale-invariant. Present in every photon that has ever crossed the Nevada sky.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="img-caption" style="margin-top:-1px;">
+    <span class="rendering-label">AI Visualization</span>
+    <em>The EGS Fractal Constant K = 2.5436</em> · Solar plasma arcs · Hydrogen emission spectrum bands · Golden ratio spiral · Sacred geometry overlay
+  </div>
+
+  <br>
 
   <div class="constants-panel">
     <div class="const-row">
