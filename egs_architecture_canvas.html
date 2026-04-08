@@ -41,8 +41,93 @@
     text-align: center;
     color: var(--muted);
     font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  /* ── VIBELANDIA BUTTON ─────────────────────────────────── */
+  .vibelandia-banner {
+    display: flex;
+    justify-content: center;
     margin-bottom: 2rem;
   }
+
+  .vibelandia-btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 1rem 2.5rem;
+    background: linear-gradient(135deg, #1a150a, #0e0c06);
+    border: 1px solid #c9a84c;
+    border-radius: 2px;
+    color: #c9a84c;
+    text-decoration: none;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vibelandia-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+  }
+
+  .vibelandia-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c9a84c40, transparent);
+  }
+
+  .vibelandia-btn:hover {
+    background: linear-gradient(135deg, #251d0e, #130f07);
+    box-shadow: 0 0 30px rgba(201,168,76,0.15), 0 4px 20px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+    color: #e8c97a;
+    border-color: #e8c97a;
+  }
+
+  .vib-eyebrow {
+    font-size: 0.55rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #8a6a1e;
+    transition: color 0.3s;
+  }
+
+  .vibelandia-btn:hover .vib-eyebrow { color: #c9a84c; }
+
+  .vib-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .vib-sub {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #6b6560;
+    transition: color 0.3s;
+  }
+
+  .vibelandia-btn:hover .vib-sub { color: #a09a90; }
+
+  @keyframes vibeGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+    50%       { box-shadow: 0 0 20px 2px rgba(201,168,76,0.12); }
+  }
+
+  .vibelandia-btn { animation: vibeGlow 4s ease-in-out infinite; }
 
   /* TABS */
   .tabs {
@@ -325,6 +410,15 @@
 
 <h1>EGS Gateway — Architecture Decision</h1>
 <p class="subtitle">Replace LLMs · or · Layer Over LLMs — which architecture wins?</p>
+
+<!-- ── VIBELANDIA BUTTON ──────────────────────────────────── -->
+<div class="vibelandia-banner">
+  <a href="vibelandia_prospectus.html" class="vibelandia-btn" target="_blank">
+    <span class="vib-eyebrow">Crown Jewel · Nevada's Holographic AI Valley</span>
+    <span class="vib-title">Mark Twain's Vibelandia<br>Downtown Reno</span>
+    <span class="vib-sub">View Full Prospectus  →</span>
+  </a>
+</div>
 
 <div class="tabs">
   <button class="tab-btn active" onclick="show('verdict')">Verdict</button>
