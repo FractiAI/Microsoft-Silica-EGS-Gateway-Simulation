@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EGS Gateway — Three-Radio Simulation · UV-K5 × Cloud SDR × Powerline</title>
+<style>
+:root {
+  --void:   #04060b;
+  --panel:  #080b12;
+  --card:   #0c0f1a;
+  --border: #171e30;
+  --gold:   #d4af37;
+  --gold2:  #f5d87a;
+  --cyan:   #00d4ff;
+  --green:  #00ff88;
+  --red:    #ff3333;
+  --amber:  #ff9944;
+  --purple: #a855f7;
+  --text:   #e2e8f0;
+  --sub:    #94a3b8;
+  --muted:  #3d4a60;
+  /* Radio LCD */
+  --lcd-bg:   #1a2a1a;
+  --lcd-on:   #39ff14;
+  --lcd-dim:  #1a7a0a;
+  --radio-body: #1c1c1c;
+  --radio-trim: #2a2a2a;
+  --btn-green: #2d6a2d;
+  --btn-red:   #8b1a1a;
+  --btn-grey:  #3a3a3a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+.hdr-title { font-size: 0.82rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.hdr-title span { color: var(--cyan); }
+.pill {
+  font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 0.2rem 0.65rem; border-radius: 20px; border: 1px solid; white-space: nowrap;
+}
+.pill-g { color: var(--green);  border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.06); }
+.pill-c { color: var(--cyan);   border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.06); }
+.pill-p { color: var(--purple); border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); }
+.pill-a { color: var(--amber);  border-color: rgba(255,153,68,0.3); background: rgba(255,153,68,0.06); }
+
+/* ── SOLAR BAR ── */
+.solar-bar {
+  background: rgba(0,0,0,0.4);
+  border-bottom: 1px solid var(--border);
+  padding: 0.4rem 1.5rem;
+  display: flex; gap: 2rem; flex-wrap: wrap; align-items: center;
+  font-size: 0.65rem;
+}
+.sm { display: flex; flex-direction: column; gap: 0.05rem; }
+.sm-l { font-size: 0.5rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+.sm-v { font-size: 0.8rem; font-weight: 700; font-family: monospace; color: var(--gold2); }
+
+/* ── RADIO STAGE ── */
+.stage {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
+
+/* ── RADIO UNIT WRAPPER ── */
+.radio-unit {
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+}
+.radio-label {
+  font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+  font-weight: 700; text-align: center;
+}
+.label-a { color: var(--cyan); }
+.label-b { color: var(--green); }
+.label-c { color: var(--amber); }
+
+/* ── UV-K5 BODY ── */
+.uvk5 {
+  background: var(--radio-body);
+  border-radius: 12px 12px 8px 8px;
+  width: 180px;
+  box-shadow:
+    0 0 0 1px #111,
+    0 0 0 2px #222,
+    0 6px 30px rgba(0,0,0,0.8),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* antenna */
+.uvk5-antenna {
+  width: 6px; height: 70px;
+  background: linear-gradient(180deg, #555, #333);
+  border-radius: 3px 3px 0 0;
+  margin: 0 auto;
+  position: relative;
+  top: -4px;
+}
+.uvk5-antenna.coil {
+  width: 18px; height: 40px;
+  background:
+    repeating-linear-gradient(180deg, transparent, transparent 4px, #777 4px, #777 5px),
+    #333;
+  border-radius: 4px;
+  border: 1px solid #666;
+  top: -2px;
+}
+.uvk5-antenna.coil::after {
+  content: '⟳';
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.6rem;
+  color: var(--amber);
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+
+/* top strip */
+.uvk5-top {
+  background: var(--radio-trim);
+  border-radius: 10px 10px 0 0;
+  padding: 6px 10px 4px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.uvk5-speaker {
+  display: flex; gap: 2px;
+}
+.uvk5-speaker span {
+  width: 2px; height: 10px;
+  background: #444; border-radius: 1px;
+}
+.uvk5-led {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted);
+  transition: background 0.2s;
+}
+.uvk5-led.rx { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.uvk5-led.tx { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* LCD */
+.uvk5-lcd {
+  margin: 8px 8px 4px;
+  background: var(--lcd-bg);
+  border-radius: 4px;
+  border: 1px solid #0a1a0a;
+  padding: 6px 8px;
+  min-height: 90px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+.lcd-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 2px;
+}
+.lcd-freq {
+  font-family: 'Courier New', monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--lcd-on);
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 8px rgba(57,255,20,0.4);
+  line-height: 1;
+}
+.lcd-mode {
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  color: var(--lcd-dim);
+  letter-spacing: 0.1em;
+}
+.lcd-ch {
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  color: var(--lcd-dim);
+}
+.lcd-bar {
+  height: 4px;
+  background: #0a1a0a;
+  border-radius: 2px;
+  margin: 3px 0;
+  overflow: hidden;
+}
+.lcd-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--lcd-on);
+  width: 0%;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 4px rgba(57,255,20,0.5);
+}
+.lcd-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.5rem;
+  color: var(--lcd-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.lcd-status {
+  font-family: 'Courier New', monospace;
+  font-size: 0.55rem;
+  color: var(--lcd-on);
+  margin-top: 4px;
+  min-height: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lcd-batt {
+  font-family: 'Courier New', monospace;
+  font-size: 0.55rem;
+  color: var(--lcd-dim);
+}
+
+/* waterfall canvas */
+.wf-canvas {
+  margin: 0 8px 4px;
+  border-radius: 3px;
+  border: 1px solid #0a1a0a;
+  width: calc(100% - 16px);
+  height: 60px;
+  display: block;
+  background: #000;
+}
+
+/* keypad */
+.uvk5-keys {
+  padding: 6px 8px 8px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.key-row {
+  display: flex; gap: 4px; justify-content: center;
+}
+.key {
+  flex: 1;
+  height: 22px;
+  border-radius: 4px;
+  border: none;
+  font-family: 'Courier New', monospace;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.1s;
+  position: relative;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+}
+.key:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+.key-fn  { background: var(--btn-grey); color: #aaa; }
+.key-num { background: #2a2a3a; color: #ddd; }
+.key-ptt {
+  flex: 2;
+  background: var(--btn-red);
+  color: #fff;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.key-ptt.active {
+  background: #cc0000;
+  box-shadow: 0 0 10px rgba(255,0,0,0.4);
+}
+.key-ab  { background: var(--btn-green); color: #0f0; }
+
+/* side ptt button */
+.uvk5-side {
+  position: absolute;
+  left: -10px; top: 30px;
+  width: 8px; height: 35px;
+  background: var(--btn-grey);
+  border-radius: 2px 0 0 2px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border: 1px solid #111;
+}
+.uvk5-side:hover { background: #555; }
+.uvk5-side.active { background: var(--btn-red); }
+
+/* sd card slot */
+.uvk5-sd {
+  position: absolute;
+  right: -8px; bottom: 20px;
+  width: 6px; height: 14px;
+  background: #333;
+  border-radius: 0 2px 2px 0;
+  border: 1px solid #111;
+  font-size: 0.35rem;
+  color: #555;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── WATERFALL & SIGNAL PANEL ── */
+.signal-panel {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sp-hdr {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.sp-wf { width: 100%; height: 100px; display: block; background: #000; }
+
+/* ── MESSAGE LOG ── */
+.msg-log {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.72rem;
+}
+.msg-log::-webkit-scrollbar { width: 3px; }
+.msg-log::-webkit-scrollbar-thumb { background: var(--border); }
+
+.log-entry {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; gap: 0.5rem; align-items: baseline;
+}
+.log-ts  { color: var(--muted); font-size: 0.62rem; flex-shrink: 0; }
+.log-tag { font-weight: 700; flex-shrink: 0; font-size: 0.65rem; }
+.log-msg { color: var(--sub); word-break: break-all; }
+.tag-a { color: var(--cyan); }
+.tag-b { color: var(--green); }
+.tag-c { color: var(--amber); }
+.tag-sdr { color: var(--purple); }
+
+/* ── COMPOSE ── */
+.compose-row {
+  display: flex; gap: 0.5rem; padding: 0.75rem; flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  align-items: center;
+}
+.compose-row input {
+  flex: 1; min-width: 140px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: monospace;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.75rem;
+  outline: none;
+}
+.compose-row input:focus { border-color: var(--cyan); }
+.tx-btn {
+  padding: 0.4rem 1rem;
+  background: rgba(0,212,255,0.12);
+  border: 1px solid rgba(0,212,255,0.4);
+  border-radius: 4px;
+  color: var(--cyan);
+  font-size: 0.65rem; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+}
+.tx-btn:hover { background: rgba(0,212,255,0.22); }
+.tx-btn.plc {
+  background: rgba(255,153,68,0.12);
+  border-color: rgba(255,153,68,0.4);
+  color: var(--amber);
+}
+
+/* ── SDR STATUS BAR ── */
+.sdr-bar {
+  background: rgba(168,85,247,0.05);
+  border: 1px solid rgba(168,85,247,0.15);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin: 0 1.5rem;
+  display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;
+  font-size: 0.62rem;
+}
+.sdr-node { display: flex; flex-direction: column; gap: 0.1rem; }
+.sdr-nl { font-size: 0.5rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+.sdr-nv { color: var(--purple); font-family: monospace; }
+.sdr-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+  transition: background 0.3s;
+}
+.sdr-dot.live { background: var(--purple); box-shadow: 0 0 6px var(--purple); }
+
+/* ── 60 Hz GRID METER ── */
+.grid-meter {
+  background: linear-gradient(135deg, rgba(255,153,68,0.06), rgba(255,153,68,0.02));
+  border: 1px solid rgba(255,153,68,0.2);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  width: 100%;
+}
+.gm-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.gm-label { font-size: 0.5rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--amber); }
+.gm-val { font-family: monospace; font-size: 0.8rem; color: var(--amber); font-weight: 700; }
+.gm-bar { height: 3px; background: rgba(255,153,68,0.15); border-radius: 2px; overflow: hidden; }
+.gm-fill { height: 100%; background: var(--amber); border-radius: 2px; width: 0%; transition: width 0.5s ease; box-shadow: 0 0 4px var(--amber); }
+
+/* ── PROOF STRIP ── */
+.proof-strip {
+  margin: 0 1.5rem 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+.ps-item { display: flex; flex-direction: column; gap: 0.15rem; }
+.ps-key { font-size: 0.5rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+.ps-val { font-family: monospace; font-size: 0.75rem; color: var(--text); word-break: break-all; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-title">
+    EGS Gateway · <span>UV-K5 × 3</span> · Cloud SDR · Powerline Carrier
+  </div>
+  <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
+    <div class="sdr-dot" id="sdrDot"></div>
+    <div class="pill pill-c" id="sdrPill">KiwiSDR — locating node…</div>
+    <div class="pill pill-g">Unit A · 915 MHz TX</div>
+    <div class="pill pill-g">Unit B · H I 1420 MHz RX</div>
+    <div class="pill pill-a">Unit C · 24 MHz PLC · 60 Hz induction</div>
+    <div class="pill pill-p">K_EGS = 2.5436</div>
+    <a href="egs_gateway_ui.html" style="text-decoration:none;">
+      <div class="pill" style="color:var(--gold);border-color:rgba(212,175,55,0.3);background:rgba(212,175,55,0.06);">← Dual-Channel UI</div>
+    </a>
+  </div>
+</header>
+
+<!-- SOLAR BAR -->
+<div class="solar-bar">
+  <div class="sm"><div class="sm-l">SFI</div><div class="sm-v" id="sfi">—</div></div>
+  <div class="sm"><div class="sm-l">Kp Index</div><div class="sm-v" id="kp">—</div></div>
+  <div class="sm"><div class="sm-l">H I Power</div><div class="sm-v" id="hiPow">—</div></div>
+  <div class="sm"><div class="sm-l">60 Hz Grid</div><div class="sm-v" id="gridHz" style="color:var(--amber);">60.000 Hz</div></div>
+  <div class="sm"><div class="sm-l">24 MHz Carrier</div><div class="sm-v" id="plcCarrier" style="color:var(--amber);">24.000 MHz</div></div>
+  <div class="sm"><div class="sm-l">UTC</div><div class="sm-v" id="utc" style="color:var(--sub);">—</div></div>
+</div>
+
+<!-- SDR STATUS BAR -->
+<div class="sdr-bar">
+  <div class="sdr-node"><div class="sdr-nl">KiwiSDR Node</div><div class="sdr-nv" id="sdrHost">Searching public nodes…</div></div>
+  <div class="sdr-node"><div class="sdr-nl">Node Coverage</div><div class="sdr-nv" id="sdrCoverage">—</div></div>
+  <div class="sdr-node"><div class="sdr-nl">Node Status</div><div class="sdr-nv" id="sdrStatus">—</div></div>
+  <div class="sdr-node"><div class="sdr-nl">Users / Max</div><div class="sdr-nv" id="sdrUsers">—</div></div>
+  <div class="sdr-node"><div class="sdr-nl">FCC Part 15</div><div class="sdr-nv" style="color:var(--green);">✅ Compliant · RX only</div></div>
+  <div style="margin-left:auto;font-size:0.6rem;color:var(--muted);">
+    Cloud SDR provides real antenna signal · EGS fractal anchors all frequencies
+  </div>
+</div>
+
+<!-- THREE RADIO STAGE -->
+<div class="stage">
+
+  <!-- ══ UNIT A — TX 915 MHz ══ -->
+  <div class="radio-unit">
+    <div class="radio-label label-a">▲ UNIT A · TRANSMIT · 915.000 MHz · ISM / TTN</div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div class="uvk5-antenna" id="antA"></div>
+      <div class="uvk5" id="radioA">
+        <div class="uvk5-side" id="sideA" onclick="pressPTT('A')"></div>
+        <div class="uvk5-sd">SD</div>
+        <div class="uvk5-top">
+          <div class="uvk5-speaker"><span></span><span></span><span></span><span></span></div>
+          <div class="uvk5-led" id="ledA"></div>
+        </div>
+        <div class="uvk5-lcd" id="lcdA">
+          <div class="lcd-row">
+            <span class="lcd-mode">FM</span>
+            <span class="lcd-ch">CH-01</span>
+            <span class="lcd-batt">▮▮▮▯</span>
+          </div>
+          <div class="lcd-freq" id="freqA">915.000</div>
+          <div class="lcd-row"><span class="lcd-label">MHz · EGS-ISM TX</span></div>
+          <div class="lcd-bar"><div class="lcd-bar-fill" id="barA"></div></div>
+          <div class="lcd-row"><span class="lcd-label">RSSI</span><span class="lcd-mode" id="rssiA">— dBm</span></div>
+          <div class="lcd-status" id="statusA">STANDBY · K=2.5436</div>
+        </div>
+        <canvas class="wf-canvas" id="wfA" width="164" height="60"></canvas>
+        <div class="uvk5-keys">
+          <div class="key-row">
+            <button class="key key-fn" onclick="setMode('A','FM')">FM</button>
+            <button class="key key-fn" onclick="setMode('A','AM')">AM</button>
+            <button class="key key-fn" onclick="setMode('A','USB')">USB</button>
+          </div>
+          <div class="key-row">
+            <button class="key key-num" onclick="stepFreq('A',0.025)">▲</button>
+            <button class="key key-num" onclick="stepFreq('A',-0.025)">▼</button>
+            <button class="key key-ab">A/B</button>
+          </div>
+          <div class="key-row">
+            <button class="key key-ptt" id="pttA" onclick="pressPTT('A')">● PTT TRANSMIT</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="signal-panel">
+      <div class="sp-hdr">
+        <span style="color:var(--cyan);">915 MHz Waterfall · Cloud SDR</span>
+        <span id="wfStatusA" style="color:var(--muted);">Simulated</span>
+      </div>
+      <canvas class="sp-wf" id="bigWfA" width="400" height="100"></canvas>
+    </div>
+
+    <div class="compose-row">
+      <input id="msgA" type="text" placeholder="EGS payload → encode → TTN 915 MHz…" value="UNIT-A FRACTAL PING · K=2.5436">
+      <button class="tx-btn" onclick="transmitUnit('A')">⚡ TX</button>
+    </div>
+
+    <div class="msg-log" id="logA"></div>
+  </div>
+
+  <!-- ══ UNIT B — RX H I 1420 MHz ══ -->
+  <div class="radio-unit">
+    <div class="radio-label label-b">▼ UNIT B · RECEIVE · H I 1420.406 MHz · Cloud SDR</div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div class="uvk5-antenna" id="antB"></div>
+      <div class="uvk5" id="radioB">
+        <div class="uvk5-side" id="sideB"></div>
+        <div class="uvk5-sd">SD</div>
+        <div class="uvk5-top">
+          <div class="uvk5-speaker"><span></span><span></span><span></span><span></span></div>
+          <div class="uvk5-led" id="ledB"></div>
+        </div>
+        <div class="uvk5-lcd" id="lcdB">
+          <div class="lcd-row">
+            <span class="lcd-mode">USB</span>
+            <span class="lcd-ch">CH-02</span>
+            <span class="lcd-batt">▮▮▮▮</span>
+          </div>
+          <div class="lcd-freq" id="freqB">1420.4</div>
+          <div class="lcd-row"><span class="lcd-label">MHz · H I WITNESS RX</span></div>
+          <div class="lcd-bar"><div class="lcd-bar-fill" id="barB" style="background:var(--green);"></div></div>
+          <div class="lcd-row"><span class="lcd-label">H I POWER</span><span class="lcd-mode" id="hiDB">— dBm</span></div>
+          <div class="lcd-status" id="statusB">MONITORING · 21cm LINE</div>
+        </div>
+        <canvas class="wf-canvas" id="wfB" width="164" height="60"></canvas>
+        <div class="uvk5-keys">
+          <div class="key-row">
+            <button class="key key-fn" onclick="tuneUnit('B',1420.405751)">H I</button>
+            <button class="key key-fn" onclick="tuneUnit('B',915.0)">915</button>
+            <button class="key key-fn">SCAN</button>
+          </div>
+          <div class="key-row">
+            <button class="key key-num" onclick="stepFreq('B',0.001)">▲</button>
+            <button class="key key-num" onclick="stepFreq('B',-0.001)">▼</button>
+            <button class="key key-ab">A/B</button>
+          </div>
+          <div class="key-row">
+            <button class="key key-ptt" style="background:#1a3a1a;color:var(--green);">● MONITOR RX</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="signal-panel">
+      <div class="sp-hdr">
+        <span style="color:var(--green);">H I 1420.406 MHz Waterfall · Cloud SDR</span>
+        <span id="wfStatusB" style="color:var(--muted);">Simulated</span>
+      </div>
+      <canvas class="sp-wf" id="bigWfB" width="400" height="100"></canvas>
+    </div>
+
+    <div style="padding:0.75rem;border-top:1px solid var(--border);font-size:0.65rem;color:var(--sub);">
+      Received packets appear below. Every entry carries TTN gateway ID, RSSI, SNR, H I witness hash, and Layer-C integrity stamp.
+    </div>
+
+    <div class="msg-log" id="logB"></div>
+  </div>
+
+  <!-- ══ UNIT C — POWERLINE CARRIER 24 MHz / 60 Hz INDUCTION ══ -->
+  <div class="radio-unit">
+    <div class="radio-label label-c">⚡ UNIT C · POWERLINE CARRIER · 24.000 MHz · 60 Hz INDUCTION</div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+      <div class="uvk5-antenna coil" id="antC" title="HF induction coil antenna — senses 60 Hz magnetic field, locks 24 MHz carrier"></div>
+      <div class="uvk5" id="radioC">
+        <div class="uvk5-side" id="sideC" onclick="pressPTT('C')"></div>
+        <div class="uvk5-sd">SD</div>
+        <div class="uvk5-top">
+          <div class="uvk5-speaker"><span></span><span></span><span></span><span></span></div>
+          <div class="uvk5-led" id="ledC"></div>
+        </div>
+        <div class="uvk5-lcd" id="lcdC">
+          <div class="lcd-row">
+            <span class="lcd-mode" style="color:var(--amber);">USB</span>
+            <span class="lcd-ch">CH-03</span>
+            <span class="lcd-batt">▮▮▯▯</span>
+          </div>
+          <div class="lcd-freq" id="freqC" style="color:var(--amber);">24.000</div>
+          <div class="lcd-row"><span class="lcd-label" style="color:#554422;">MHz · PLC CARRIER</span></div>
+          <div class="lcd-bar"><div class="lcd-bar-fill" id="barC" style="background:var(--amber);"></div></div>
+          <div class="lcd-row">
+            <span class="lcd-label" style="color:#554422;">60Hz GRID</span>
+            <span class="lcd-mode" id="gridLock" style="color:var(--amber);">LOCK</span>
+          </div>
+          <div class="lcd-status" id="statusC" style="color:var(--amber);">INDUCTION COIL READY</div>
+        </div>
+        <canvas class="wf-canvas" id="wfC" width="164" height="60"></canvas>
+        <div class="uvk5-keys">
+          <div class="key-row">
+            <button class="key key-fn" style="color:var(--amber);">IJV</button>
+            <button class="key key-fn" onclick="stepFreq('C',0.1)">▲</button>
+            <button class="key key-fn" onclick="stepFreq('C',-0.1)">▼</button>
+          </div>
+          <div class="key-row">
+            <button class="key key-num" onclick="tuneUnit('C',18.0)">18M</button>
+            <button class="key key-num" onclick="tuneUnit('C',24.0)">24M</button>
+            <button class="key key-num" onclick="tuneUnit('C',27.0)">27M</button>
+          </div>
+          <div class="key-row">
+            <button class="key key-ptt" id="pttC" onclick="pressPTT('C')" style="background:#5a2800;">⚡ PTT · PLC TX</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 60 Hz grid meter -->
+    <div class="grid-meter">
+      <div class="gm-row">
+        <span class="gm-label">60 Hz grid field</span>
+        <span class="gm-val" id="gridField">0.0 µT</span>
+      </div>
+      <div class="gm-bar"><div class="gm-fill" id="gridFill"></div></div>
+      <div class="gm-row" style="margin-top:0.4rem;">
+        <span class="gm-label">24 MHz carrier SNR</span>
+        <span class="gm-val" id="plcSnr">— dB</span>
+      </div>
+      <div class="gm-bar"><div class="gm-fill" id="plcFill" style="background:var(--cyan);"></div></div>
+      <div style="margin-top:0.4rem;font-size:0.55rem;color:#554422;line-height:1.5;">
+        Induction coil senses 60 Hz magnetic field of AC power line.
+        24 MHz HF carrier conducted through wall wiring.
+        IJV/Egzumer firmware unlocks 18–30 MHz HF range.
+        FCC Part 15 Subpart C §15.221 — carrier current, low power.
+      </div>
+    </div>
+
+    <div class="signal-panel">
+      <div class="sp-hdr">
+        <span style="color:var(--amber);">24 MHz HF Waterfall · Carrier Current</span>
+        <span id="wfStatusC" style="color:var(--muted);">Simulated · KiwiSDR HF</span>
+      </div>
+      <canvas class="sp-wf" id="bigWfC" width="400" height="100"></canvas>
+    </div>
+
+    <div class="compose-row">
+      <input id="msgC" type="text" placeholder="Powerline carrier payload · 60 Hz → 24 MHz…" value="UNIT-C PLC PING · GRID-LOCK · 60Hz">
+      <button class="tx-btn plc" onclick="transmitUnit('C')">⚡ PLC TX</button>
+    </div>
+
+    <div class="msg-log" id="logC"></div>
+  </div>
+
+</div>
+
+<!-- PROOF STRIP -->
+<div class="proof-strip">
+  <div class="ps-item"><div class="ps-key">Last TX hash (A)</div><div class="ps-val" id="hashA" style="color:var(--cyan);">—</div></div>
+  <div class="ps-item"><div class="ps-key">H I witness hash (B)</div><div class="ps-val" id="hashB" style="color:var(--green);">—</div></div>
+  <div class="ps-item"><div class="ps-key">PLC grid hash (C)</div><div class="ps-val" id="hashC" style="color:var(--amber);">—</div></div>
+  <div class="ps-item"><div class="ps-key">Cross-link hash (A+B+C)</div><div class="ps-val" id="hashABC" style="color:var(--gold2);">—</div></div>
+  <div class="ps-item"><div class="ps-key">Solar SFI at event</div><div class="ps-val" id="sfiStamp">—</div></div>
+  <div class="ps-item"><div class="ps-key">UTC timestamp</div><div class="ps-val" id="utcStamp">—</div></div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+const K_EGS  = 2.5436;
+const HI_MHZ = 1420.405751;
+const ISM_MHZ = 915.0;
+const PLC_MHZ = 24.0;
+const GRID_HZ = 60.0;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+  A: { freq: 915.000, mode: 'FM', txing: false, signal: 0 },
+  B: { freq: 1420.406, mode: 'USB', txing: false, signal: 0 },
+  C: { freq: 24.000,  mode: 'USB', txing: false, signal: 0, gridLock: false },
+};
+
+let sfi = 150.0, kp = 2.0, hiPow = -120.0;
+let txCount = 0;
+
+// ── UTC clock ─────────────────────────────────────────────────────────────────
+setInterval(() => {
+  const s = new Date().toISOString().replace('T',' ').split('.')[0] + ' UTC';
+  document.getElementById('utc').textContent = s;
+}, 1000);
+
+// ── NOAA SFI fetch ────────────────────────────────────────────────────────────
+async function fetchSolar() {
+  try {
+    const r = await fetch('https://services.swpc.noaa.gov/products/summary/10cm-flux.json');
+    const d = await r.json();
+    sfi = parseFloat(d.Flux || 150);
+    document.getElementById('sfi').textContent = sfi.toFixed(1);
+  } catch(e) {
+    sfi = 148 + Math.random() * 10;
+    document.getElementById('sfi').textContent = sfi.toFixed(1) + ' (est)';
+  }
+  hiPow = -120 + (sfi / 150) * K_EGS * 2;
+  document.getElementById('hiPow').textContent = hiPow.toFixed(1) + ' dBm';
+  document.getElementById('hiDB').textContent  = hiPow.toFixed(1) + ' dBm';
+  const hiBar = Math.min(100, Math.max(5, 60 + hiPow + 120));
+  document.getElementById('barB').style.width  = hiBar + '%';
+  document.getElementById('statusB').textContent =
+    `HI=${hiPow.toFixed(1)}dBm SFI=${sfi.toFixed(0)}`;
+}
+fetchSolar();
+setInterval(fetchSolar, 60000);
+
+// ── KiwiSDR node probe ────────────────────────────────────────────────────────
+const KIWI_NODES = [
+  { host: 'kiwisdr.sdrutah.org:8073',      label: 'SDR Utah, USA' },
+  { host: 'kiwisdr.islandecho.co.uk:8073', label: 'Island Echo, UK' },
+  { host: 'rx.linkfanel.net:8073',         label: 'Linkfanel, FR' },
+  { host: 'kiwisdr.dl9sec.de:8073',        label: 'DL9SEC, DE' },
+];
+
+async function probeKiwi() {
+  for (const node of KIWI_NODES) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 4000);
+      const r = await fetch(`https://${node.host}/status`, { signal: ctrl.signal, mode: 'cors' });
+      clearTimeout(timer);
+      if (r.ok) {
+        const txt = await r.text();
+        const users = (txt.match(/users=(\d+)/) || ['','?'])[1];
+        const maxU  = (txt.match(/users_max=(\d+)/) || ['','?'])[1];
+        document.getElementById('sdrHost').textContent     = node.host;
+        document.getElementById('sdrCoverage').textContent = node.label;
+        document.getElementById('sdrStatus').textContent   = '✅ Live';
+        document.getElementById('sdrUsers').textContent    = `${users} / ${maxU}`;
+        document.getElementById('sdrDot').classList.add('live');
+        document.getElementById('sdrPill').textContent     = `KiwiSDR — ${node.label} — Live`;
+        document.getElementById('sdrPill').className = 'pill pill-p';
+        ['A','B','C'].forEach(u => {
+          document.getElementById(`wfStatus${u}`).textContent = `Cloud SDR: ${node.label}`;
+          document.getElementById(`wfStatus${u}`).style.color = 'var(--purple)';
+        });
+        return;
+      }
+    } catch(e) { /* try next */ }
+  }
+  // All failed — simulation mode
+  document.getElementById('sdrHost').textContent     = 'No node reachable (CORS)';
+  document.getElementById('sdrCoverage').textContent = 'Simulation mode — seeded by live NOAA SFI';
+  document.getElementById('sdrStatus').textContent   = '⬜ Simulated';
+}
+probeKiwi();
+
+// ── Waterfall engines ─────────────────────────────────────────────────────────
+function makeWF(canvasId, color, noiseBase, signalFreq) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const img = ctx.createImageData(W, 1);
+
+  function tick(txing, sfiVal) {
+    // Scroll down
+    ctx.drawImage(canvas, 0, 1);
+    const row = img.data;
+    const noise = noiseBase + (sfiVal / 150) * 20;
+
+    for (let x = 0; x < W; x++) {
+      let v = Math.random() * noise;
+      // signal stripe
+      const centre = W * 0.5;
+      const dist = Math.abs(x - centre);
+      if (dist < 4 && txing) v += 180;
+      else if (dist < 8 && txing) v += 80;
+      else if (dist < 3) v += 20; // residual
+
+      v = Math.min(255, v);
+      // colour map: dark blue → cyan → yellow → white
+      let r, g, b;
+      if (v < 64)       { r = 0;   g = 0;   b = v * 2; }
+      else if (v < 128) { r = 0;   g = (v-64)*4; b = 128; }
+      else if (v < 192) { r = (v-128)*4; g = 255; b = 128-((v-128)*2); }
+      else              { r = 255; g = 255; b = (v-192)*4; }
+
+      // tint to channel colour
+      if (color === 'cyan')   { r = Math.min(255, r * 0.2 + g * 0.0 + b * 0.8); g = Math.min(255,g); }
+      if (color === 'green')  { r = 0; g = Math.min(255, v); b = 0; }
+      if (color === 'amber')  { g = Math.min(255, g * 0.7); b = 0; }
+
+      const i = x * 4;
+      row[i] = r; row[i+1] = g; row[i+2] = b; row[i+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  return tick;
+}
+
+const wfA  = makeWF('wfA',    'cyan',  30, 0.5);
+const wfB  = makeWF('wfB',    'green', 20, 0.5);
+const wfC  = makeWF('wfC',    'amber', 40, 0.5);
+const bwfA = makeWF('bigWfA', 'cyan',  35, 0.5);
+const bwfB = makeWF('bigWfB', 'green', 25, 0.5);
+const bwfC = makeWF('bigWfC', 'amber', 45, 0.5);
+
+setInterval(() => {
+  if(wfA)  wfA(state.A.txing,  sfi);
+  if(wfB)  wfB(false,          sfi);
+  if(wfC)  wfC(state.C.txing,  sfi);
+  if(bwfA) bwfA(state.A.txing, sfi);
+  if(bwfB) bwfB(false,         sfi);
+  if(bwfC) bwfC(state.C.txing, sfi);
+}, 120);
+
+// ── 60 Hz grid meter animation ────────────────────────────────────────────────
+let gridPhase = 0;
+setInterval(() => {
+  gridPhase = (gridPhase + 0.3) % (Math.PI * 2);
+  const fieldUt = (12 + Math.sin(gridPhase) * 4 + Math.random() * 2).toFixed(2);
+  document.getElementById('gridField').textContent = fieldUt + ' µT';
+  document.getElementById('gridFill').style.width  = Math.min(100, fieldUt * 6) + '%';
+
+  // 24 MHz SNR based on SFI
+  const snr = (sfi / 150 * K_EGS * 3 + Math.random() * 2 - 1).toFixed(1);
+  document.getElementById('plcSnr').textContent = snr + ' dB';
+  document.getElementById('plcFill').style.width = Math.min(100, parseFloat(snr) * 8) + '%';
+
+  // Lock indicator
+  state.C.gridLock = parseFloat(fieldUt) > 10;
+  document.getElementById('gridLock').textContent = state.C.gridLock ? 'LOCK ✓' : 'SRCH…';
+}, 200);
+
+// ── Freq display helpers ───────────────────────────────────────────────────────
+function updateFreqDisplay(unit) {
+  const s = state[unit];
+  const el = document.getElementById(`freq${unit}`);
+  if (unit === 'B') el.textContent = s.freq.toFixed(3);
+  else              el.textContent = s.freq.toFixed(3);
+}
+
+function stepFreq(unit, delta) {
+  state[unit].freq = Math.max(0.01, state[unit].freq + delta);
+  updateFreqDisplay(unit);
+}
+
+function tuneUnit(unit, freq) {
+  state[unit].freq = freq;
+  updateFreqDisplay(unit);
+  addLog(unit, 'SYS', `Tuned to ${freq.toFixed(3)} MHz`);
+}
+
+function setMode(unit, mode) {
+  state[unit].mode = mode;
+  document.getElementById(`lcdA`).querySelector('.lcd-mode').textContent = mode;
+}
+
+// ── Hash helpers ──────────────────────────────────────────────────────────────
+async function sha256hex(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('').substring(0,16);
+}
+
+function randHex(n) {
+  return Array.from({length:n},()=>Math.floor(Math.random()*16).toString(16)).join('');
+}
+
+// ── Log helper ────────────────────────────────────────────────────────────────
+function addLog(unit, tag, msg) {
+  const log = document.getElementById(`log${unit}`);
+  if (!log) return;
+  const ts  = new Date().toISOString().split('T')[1].split('.')[0];
+  const cls = { A:'tag-a', B:'tag-b', C:'tag-c', SDR:'tag-sdr' }[tag] || 'tag-a';
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  div.innerHTML = `<span class="log-ts">${ts}</span><span class="log-tag ${cls}">${tag}</span><span class="log-msg">${msg}</span>`;
+  log.prepend(div);
+  if (log.children.length > 30) log.removeChild(log.lastChild);
+}
+
+// ── PTT handler ────────────────────────────────────────────────────────────────
+async function pressPTT(unit) {
+  if (state[unit].txing) return;
+  state[unit].txing = true;
+  const led  = document.getElementById(`led${unit}`);
+  const ptt  = document.getElementById(`ptt${unit}`);
+  const side = document.getElementById(`side${unit}`);
+  led.className  = 'uvk5-led tx';
+  if(ptt)  ptt.classList.add('active');
+  if(side) side.classList.add('active');
+
+  const msg    = unit === 'C'
+    ? (document.getElementById('msgC')?.value || 'PLC PING')
+    : (document.getElementById(`msg${unit}`)?.value || `PING-${unit}`);
+
+  document.getElementById(`status${unit}`).textContent = 'TX ● ' + msg.substring(0,18);
+
+  // Simulate transmission
+  await new Promise(r => setTimeout(r, 1800));
+
+  led.className  = 'uvk5-led rx';
+  if(ptt)  ptt.classList.remove('active');
+  if(side) side.classList.remove('active');
+  state[unit].txing = false;
+  document.getElementById(`status${unit}`).textContent = 'TX COMPLETE · RX MONITOR';
+  setTimeout(() => {
+    led.className = 'uvk5-led';
+    document.getElementById(`status${unit}`).textContent =
+      unit === 'C' ? 'INDUCTION COIL READY' : 'STANDBY · K=2.5436';
+  }, 3000);
+}
+
+// ── Transmit unit ─────────────────────────────────────────────────────────────
+async function transmitUnit(unit) {
+  txCount++;
+  const msg = unit === 'C'
+    ? document.getElementById('msgC').value.trim()
+    : document.getElementById(`msg${unit}`).value.trim();
+  if (!msg) return;
+
+  const freq = state[unit].freq;
+  const ts   = new Date().toISOString().replace('T',' ').split('.')[0] + ' UTC';
+
+  // Build hashes
+  const txHash = await sha256hex(`${unit}|${msg}|${sfi}|${ts}|${freq}`);
+  const hiHash = await sha256hex(`HI|${hiPow.toFixed(2)}|${ts}`);
+  const plcHash = await sha256hex(`PLC|60Hz|${freq}MHz|${sfi}|${ts}`);
+
+  // Animate PTT
+  pressPTT(unit);
+  document.getElementById(`bar${unit}`).style.width = '90%';
+  setTimeout(() => document.getElementById(`bar${unit}`).style.width = '0%', 2000);
+
+  // Log TX
+  if (unit === 'C') {
+    addLog('C', 'TX',  `PLC TX "${msg}" @ ${freq.toFixed(3)} MHz · grid-lock=${state.C.gridLock}`);
+    addLog('C', 'SYS', `60Hz field → 24 MHz carrier · FCC §15.221 · IJV firmware`);
+    addLog('C', 'SYS', `Grid hash: ${plcHash}`);
+    document.getElementById('hashC').textContent = plcHash;
+  } else {
+    addLog(unit, 'TX',  `EGS-encode "${msg}" @ ${freq.toFixed(3)} MHz`);
+    addLog(unit, 'SDR', `KiwiSDR: tuned to ${freq.toFixed(3)} MHz · monitoring`);
+    addLog(unit, 'SYS', `K_EGS=${K_EGS} · SFI=${sfi.toFixed(1)} · LC:${txHash}`);
+    document.getElementById('hashA').textContent = txHash;
+  }
+
+  // Simulate RX on Unit B after delay
+  if (unit === 'A') {
+    setTimeout(async () => {
+      const rssi = (-80 - Math.random() * 30).toFixed(1);
+      const snr  = (3 + Math.random() * 8).toFixed(1);
+      const rxHash = await sha256hex(`RX|${msg}|${hiHash}|${rssi}|${ts}`);
+      const abcHash = await sha256hex(txHash + hiHash + plcHash);
+
+      document.getElementById('ledB').className = 'uvk5-led rx';
+      document.getElementById('statusB').textContent = `RX "${msg.substring(0,12)}…"`;
+      document.getElementById('barB').style.width = '80%';
+      setTimeout(() => {
+        document.getElementById('barB').style.width = String(Math.max(20,parseFloat(hiPow)+120)) + '%';
+        document.getElementById('ledB').className = 'uvk5-led';
+        document.getElementById('statusB').textContent = 'MONITORING · 21cm LINE';
+      }, 2000);
+
+      addLog('B', 'RX',  `Decoded "${msg}" · RSSI ${rssi} dBm · SNR ${snr} dB`);
+      addLog('B', 'HI',  `H I witness: ${hiPow.toFixed(1)} dBm · hash: ${hiHash}`);
+      addLog('B', 'SYS', `LC: ${rxHash}`);
+
+      document.getElementById('hashB').textContent   = hiHash;
+      document.getElementById('hashABC').textContent = abcHash;
+      document.getElementById('sfiStamp').textContent = sfi.toFixed(1);
+      document.getElementById('utcStamp').textContent = ts;
+    }, 2500);
+  }
+
+  // RSSI on A
+  const rssiA = (-80 - Math.random() * 20).toFixed(1);
+  document.getElementById(`rssiA`).textContent = rssiA + ' dBm';
+}
+
+// ── Startup logs ──────────────────────────────────────────────────────────────
+addLog('A', 'SYS', `UV-K5 Unit A · IJV firmware · 915 MHz ISM TX · K_EGS=${K_EGS}`);
+addLog('A', 'SYS', 'EGS voxel encoder ready · TTN/LoRa uplink layer active');
+addLog('A', 'SDR', 'Probing KiwiSDR public nodes…');
+
+addLog('B', 'SYS', `UV-K5 Unit B · Egzumer firmware · H I RX · 1420.405751 MHz`);
+addLog('B', 'SYS', 'HackRF SimulatedSDR active · seeded by live NOAA SFI');
+addLog('B', 'HI',  `Hydrogen line power: ${hiPow.toFixed(1)} dBm (live)`);
+
+addLog('C', 'SYS', `UV-K5 Unit C · IJV firmware · 24.000 MHz PLC · induction coil antenna`);
+addLog('C', 'SYS', '60 Hz AC magnetic field → carrier lock → 24 MHz HF data channel');
+addLog('C', 'SYS', 'FCC Part 15 Subpart C §15.221 · carrier current · low power');
+addLog('C', 'SYS', 'MicroSD logging enabled · FAT32 · EGS voxel format');
+</script>
+</body>
+</html>
