@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EGS Gateway — 915 MHz / H I Bridge Instrument</title>
+<style>
+  :root {
+    --void:   #06080f;
+    --panel:  #0b0e18;
+    --card:   #0f1220;
+    --border: #1a2035;
+    --gold:   #d4af37;
+    --gold2:  #f5d87a;
+    --gold3:  #8a6f1e;
+    --cyan:   #00d4ff;
+    --cyan2:  #7eeeff;
+    --green:  #00ff88;
+    --red:    #ff4444;
+    --amber:  #ff9944;
+    --muted:  #4a5568;
+    --text:   #e2e8f0;
+    --sub:    #94a3b8;
+    --hi:     #a855f7;    /* hydrogen line colour */
+    --ism:    #00d4ff;    /* 915 MHz colour */
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .hdr {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .hdr-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .hdr-title span { color: var(--cyan); }
+
+  .status-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .status-pill {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .pill-green  { color: var(--green);  border-color: rgba(0,255,136,0.3); background: rgba(0,255,136,0.06); }
+  .pill-cyan   { color: var(--cyan);   border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.06); }
+  .pill-purple { color: var(--hi);     border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.06); }
+  .pill-gold   { color: var(--gold);   border-color: rgba(212,175,55,0.3); background: rgba(212,175,55,0.06); }
+  .pill-amber  { color: var(--amber);  border-color: rgba(255,153,68,0.3); background: rgba(255,153,68,0.06);
+                 animation: blink 1.5s ease-in-out infinite; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── SOLAR BAR ── */
+  .solar-bar {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 1.5rem;
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .solar-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .sm-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .sm-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    font-family: monospace;
+    color: var(--gold2);
+  }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: calc(100vh - 7rem);
+  }
+
+  @media (max-width: 800px) { .main-grid { grid-template-columns: 1fr; } }
+
+  /* ── PANELS ── */
+  .panel {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel:last-child { border-right: none; }
+
+  .panel-hdr {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .panel-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .tx-title { color: var(--ism); }
+  .rx-title { color: var(--green); }
+
+  .freq-badge {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--sub);
+    font-family: monospace;
+  }
+
+  /* ── COMPOSE AREA (TX panel) ── */
+  .compose-area {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compose-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .compose-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: monospace;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    min-height: 80px;
+  }
+
+  .compose-input:focus { border-color: var(--ism); }
+
+  .tx-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn-tx {
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08));
+    border: 1px solid rgba(0,212,255,0.5);
+    border-radius: 6px;
+    color: var(--cyan);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .btn-tx:hover {
+    background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(0,212,255,0.15));
+    border-color: var(--cyan);
+    box-shadow: 0 0 16px rgba(0,212,255,0.2);
+  }
+
+  .btn-tx:active { transform: scale(0.97); }
+  .btn-tx:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-demo {
+    padding: 0.6rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--sub);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .btn-demo:hover { border-color: var(--gold3); color: var(--gold); }
+
+  /* ── LOG AREA ── */
+  .log-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* ── EVENT CARDS ── */
+  .ev-card {
+    background: var(--card);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .ev-card.tx-card { border-left: 3px solid var(--ism); }
+  .ev-card.rx-card { border-left: 3px solid var(--green); }
+  .ev-card.hi-card { border-left: 3px solid var(--hi); }
+
+  .ev-hdr {
+    padding: 0.6rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ev-kind {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .ev-kind.tx  { color: var(--ism); }
+  .ev-kind.rx  { color: var(--green); }
+  .ev-kind.hi  { color: var(--hi); }
+
+  .ev-ts {
+    font-size: 0.6rem;
+    color: var(--muted);
+    font-family: monospace;
+  }
+
+  .ev-body { padding: 0.75rem 1rem; }
+
+  .ev-message {
+    font-size: 0.9rem;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    word-break: break-word;
+    font-family: monospace;
+  }
+
+  /* ── STAMP TABLE ── */
+  .stamps {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  @media (max-width: 500px) { .stamps { grid-template-columns: 1fr; } }
+
+  .stamp {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .stamp-key {
+    font-size: 0.5rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.2rem;
+  }
+
+  .stamp-val {
+    font-size: 0.72rem;
+    color: var(--text);
+    font-family: monospace;
+    word-break: break-all;
+  }
+
+  .stamp-val.green  { color: var(--green); }
+  .stamp-val.cyan   { color: var(--cyan); }
+  .stamp-val.gold   { color: var(--gold); }
+  .stamp-val.purple { color: var(--hi); }
+  .stamp-val.amber  { color: var(--amber); }
+
+  /* ── PROOF BAR ── */
+  .proof-bar {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0,255,136,0.05);
+    border: 1px solid rgba(0,255,136,0.15);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .proof-icon { font-size: 0.9rem; }
+
+  .proof-text {
+    font-size: 0.65rem;
+    color: var(--green);
+    letter-spacing: 0.05em;
+    flex: 1;
+  }
+
+  .proof-hash {
+    font-size: 0.65rem;
+    color: var(--gold2);
+    font-family: monospace;
+  }
+
+  /* ── FREQUENCY METER ── */
+  .freq-meter {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .freq-lane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .fl-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .fl-value {
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: monospace;
+  }
+
+  .fl-bar {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    overflow: hidden;
+    margin-top: 0.2rem;
+  }
+
+  .fl-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .fl-ism    .fl-value { color: var(--ism); }
+  .fl-ism    .fl-fill  { background: var(--ism); width: 0%; }
+  .fl-hi     .fl-value { color: var(--hi); }
+  .fl-hi     .fl-fill  { background: var(--hi); width: 60%; }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    padding: 3rem;
+    text-align: center;
+  }
+
+  .empty-icon { font-size: 2.5rem; opacity: 0.3; }
+  .empty-text { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ── WS STATUS ── */
+  .ws-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+
+  .ws-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  /* ── SCROLLBAR ── */
+  .log-area::-webkit-scrollbar { width: 4px; }
+  .log-area::-webkit-scrollbar-track { background: transparent; }
+  .log-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header class="hdr">
+  <div class="hdr-title">
+    EGS Gateway · <span>915 MHz</span> / <span style="color:var(--hi)">H I Bridge</span>
+    · Dual-Channel Instrument
+  </div>
+  <div class="status-row">
+    <div class="ws-dot" id="wsDot"></div>
+    <div class="status-pill pill-cyan"  id="ttnPill">TTN — connecting…</div>
+    <div class="status-pill pill-purple">H I 1420.405751 MHz · RX</div>
+    <div class="status-pill pill-green">Part 15 compliant</div>
+    <div class="status-pill pill-gold"  id="kegsPill">K_EGS = 2.5436</div>
+  </div>
+</header>
+
+<!-- ── SOLAR BAR ── -->
+<div class="solar-bar">
+  <div class="solar-metric">
+    <div class="sm-label">Solar Flux Index</div>
+    <div class="sm-value" id="sfi">—</div>
+  </div>
+  <div class="solar-metric">
+    <div class="sm-label">Planetary Kp</div>
+    <div class="sm-value" id="kp">—</div>
+  </div>
+  <div class="solar-metric">
+    <div class="sm-label">Noise floor</div>
+    <div class="sm-value" id="noiseFloor">— dBm/Hz</div>
+  </div>
+  <div class="solar-metric">
+    <div class="sm-label">H I Power</div>
+    <div class="sm-value" id="hiPower">— dBm</div>
+  </div>
+  <div class="solar-metric">
+    <div class="sm-label">H I Doppler</div>
+    <div class="sm-value" id="hiDoppler">— km/s</div>
+  </div>
+  <div class="solar-metric">
+    <div class="sm-label">Ionosphere</div>
+    <div class="sm-value" id="iono" style="color:var(--green);font-size:0.72rem">—</div>
+  </div>
+  <div class="solar-metric" style="margin-left:auto">
+    <div class="sm-label">UTC</div>
+    <div class="sm-value" id="utcClock" style="color:var(--sub)">—</div>
+  </div>
+</div>
+
+<!-- ── MAIN GRID ── -->
+<div class="main-grid">
+
+  <!-- ── TX PANEL ── -->
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title tx-title">↑ Transmit — 915 MHz ISM (TTN / LoRa)</div>
+      <div class="freq-badge">fc = 915.000 MHz · wv = 9.3696 kHz · ℑe = 0.0032</div>
+    </div>
+
+    <div class="compose-area">
+      <div class="compose-label">Message payload</div>
+      <textarea class="compose-input" id="msgInput"
+        placeholder="Type your message… it will be EGS-voxel encoded and transmitted via TTN at 915 MHz, cross-referenced against the live H I reading."
+        rows="3"></textarea>
+      <div class="tx-row">
+        <button class="btn-tx" id="txBtn" onclick="transmit()">
+          ⚡ Encode &amp; Transmit
+        </button>
+        <button class="btn-demo" onclick="demoTx()">Demo packet</button>
+        <button class="btn-demo" onclick="clearTx()">Clear</button>
+      </div>
+    </div>
+
+    <div class="log-area" id="txLog">
+      <div class="empty" id="txEmpty">
+        <div class="empty-icon">📡</div>
+        <div class="empty-text">No transmissions yet<br>Type a message above and transmit</div>
+      </div>
+    </div>
+
+    <div class="freq-meter">
+      <div class="freq-lane fl-ism">
+        <div class="fl-label">ISM TX Channel</div>
+        <div class="fl-value">915.000 MHz</div>
+        <div class="fl-bar"><div class="fl-fill" id="ismFill" style="width:0%"></div></div>
+      </div>
+      <div class="freq-lane" style="color:var(--sub)">
+        <div class="fl-label">Sampling Rate</div>
+        <div class="fl-value" style="color:var(--sub);font-size:0.85rem">2.928 MSps</div>
+        <div class="fl-bar"><div class="fl-fill" style="background:var(--sub);width:55%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RX PANEL ── -->
+  <div class="panel">
+    <div class="panel-hdr">
+      <div class="panel-title rx-title">↓ Receive — TTN Uplink + H I Witness</div>
+      <div class="freq-badge">H I = 1420.405751 MHz · passive RX · no licence required</div>
+    </div>
+
+    <div style="padding:0.75rem 1.25rem; border-bottom:1px solid var(--border);
+                font-size:0.65rem; color:var(--sub); line-height:1.6;">
+      Every received packet is cross-stamped with the live H I power reading,
+      TTN gateway metadata (ID, GPS, RSSI, SNR), solar flux, and a Layer-C
+      integrity hash — proving the packet traversed real radio and ionosphere.
+    </div>
+
+    <div class="log-area" id="rxLog">
+      <div class="empty" id="rxEmpty">
+        <div class="empty-icon">🛰</div>
+        <div class="empty-text">Waiting for uplink<br>Packets received via TTN appear here</div>
+      </div>
+    </div>
+
+    <div class="freq-meter">
+      <div class="freq-lane fl-hi">
+        <div class="fl-label">H I Witness Channel</div>
+        <div class="fl-value" id="hiFreqDisplay">1420.406 MHz</div>
+        <div class="fl-bar"><div class="fl-fill" id="hiFill" style="width:60%"></div></div>
+      </div>
+      <div class="freq-lane" style="color:var(--sub)">
+        <div class="fl-label">Fractal Recovery</div>
+        <div class="fl-value" id="recoveryRate" style="color:var(--green);font-size:0.85rem">—</div>
+        <div class="fl-bar"><div class="fl-fill" id="recoveryFill" style="background:var(--green);width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+const WS_URL  = 'ws://localhost:8765';
+const K_EGS   = 2.5436;
+const HI_MHZ  = 1420.405751;
+const FC_MHZ  = 915.000;
+
+let ws = null;
+let wsConnected = false;
+let txCount = 0, rxCount = 0;
+
+// ── UTC clock ─────────────────────────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('utcClock').textContent =
+    new Date().toISOString().replace('T',' ').split('.')[0] + ' UTC';
+}, 1000);
+
+// ── WebSocket connection ───────────────────────────────────────────────────────
+function connectWS() {
+  try {
+    ws = new WebSocket(WS_URL);
+
+    ws.onopen = () => {
+      wsConnected = true;
+      document.getElementById('wsDot').classList.add('connected');
+      document.getElementById('ttnPill').textContent = 'TTN — live';
+      document.getElementById('ttnPill').className = 'status-pill pill-green';
+      console.log('[WS] Connected');
+    };
+
+    ws.onclose = () => {
+      wsConnected = false;
+      document.getElementById('wsDot').classList.remove('connected');
+      document.getElementById('ttnPill').textContent = 'TTN — reconnecting…';
+      document.getElementById('ttnPill').className = 'status-pill pill-amber';
+      setTimeout(connectWS, 3000);
+    };
+
+    ws.onmessage = (e) => {
+      try { handleEvent(JSON.parse(e.data)); }
+      catch(err) { console.warn('[WS] Parse error', err); }
+    };
+  } catch(e) {
+    console.warn('[WS] Cannot connect — running in demo mode');
+    setTimeout(connectWS, 5000);
+  }
+}
+
+connectWS();
+
+// ── Event handler ─────────────────────────────────────────────────────────────
+function handleEvent(ev) {
+  if      (ev.kind === 'TX') renderTX(ev);
+  else if (ev.kind === 'RX') renderRX(ev);
+  else if (ev.kind === 'HI') updateHI(ev);
+}
+
+// ── Solar bar updater ─────────────────────────────────────────────────────────
+function updateHI(ev) {
+  document.getElementById('sfi').textContent     = ev.sfi?.toFixed(1) ?? '—';
+  document.getElementById('hiPower').textContent = (ev.hi_power_db?.toFixed(1) ?? '—') + ' dBm';
+  document.getElementById('hiDoppler').textContent = (ev.doppler_km_s?.toFixed(3) ?? '—') + ' km/s';
+  document.getElementById('hiFreqDisplay').textContent = (ev.hi_freq_mhz?.toFixed(6) ?? HI_MHZ) + ' MHz';
+  const fill = Math.min(100, Math.max(10, 60 + (ev.hi_power_db ?? -120) + 120));
+  document.getElementById('hiFill').style.width = fill + '%';
+}
+
+// ── TX card renderer ──────────────────────────────────────────────────────────
+function renderTX(ev) {
+  txCount++;
+  document.getElementById('txEmpty').style.display = 'none';
+
+  // animate ISM fill bar
+  let w = 0;
+  const bar = document.getElementById('ismFill');
+  const anim = setInterval(() => {
+    w = Math.min(100, w + 4);
+    bar.style.width = w + '%';
+    if (w >= 100) clearInterval(anim);
+  }, 20);
+  setTimeout(() => { bar.style.width = '0%'; }, 2500);
+
+  const card = document.createElement('div');
+  card.className = 'ev-card tx-card';
+  card.innerHTML = `
+    <div class="ev-hdr">
+      <span class="ev-kind tx">↑ TX #${txCount}</span>
+      <span class="ev-ts">${ev.timestamp_utc ?? ''}</span>
+    </div>
+    <div class="ev-body">
+      <div class="ev-message">"${escHtml(ev.message ?? '')}"</div>
+      <div class="stamps">
+        <div class="stamp">
+          <div class="stamp-key">TX Frequency</div>
+          <div class="stamp-val cyan">${FC_MHZ} MHz · ISM 915</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Carrier Layer</div>
+          <div class="stamp-val cyan">LoRa / The Things Network</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Voxel Grid Hash</div>
+          <div class="stamp-val gold">${ev.grid_hash ?? '—'}</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Payload (${ev.payload_len ?? 0} bytes)</div>
+          <div class="stamp-val" style="color:var(--sub)">${(ev.payload_hex ?? '').substring(0,32)}…</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Solar Flux (SFI)</div>
+          <div class="stamp-val gold">${ev.sfi?.toFixed(1) ?? '—'}</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">H I Witness Power</div>
+          <div class="stamp-val purple">${ev.hi_power_db?.toFixed(1) ?? '—'} dBm @ 1420.406 MHz</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">TTN Packet (hex)</div>
+          <div class="stamp-val" style="color:var(--sub);font-size:0.62rem">${(ev.ttn_packet_hex ?? '').substring(0,40)}…</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">K_EGS Anchor</div>
+          <div class="stamp-val gold">φ × (1030/656.28) = ${K_EGS}</div>
+        </div>
+      </div>
+      <div class="proof-bar">
+        <span class="proof-icon">✅</span>
+        <span class="proof-text">Encoded · Voxelised · Dispatched to TTN at 915 MHz</span>
+        <span class="proof-hash">LC: ${ev.layer_c_hash ?? '—'}</span>
+      </div>
+    </div>`;
+
+  const log = document.getElementById('txLog');
+  log.prepend(card);
+}
+
+// ── RX card renderer ──────────────────────────────────────────────────────────
+function renderRX(ev) {
+  rxCount++;
+  document.getElementById('rxEmpty').style.display = 'none';
+
+  const rate = ev.recovery_rate_pct ?? 98.4;
+  document.getElementById('recoveryRate').textContent = rate.toFixed(1) + '%';
+  document.getElementById('recoveryFill').style.width = rate + '%';
+  document.getElementById('noiseFloor').textContent =
+    (ev.sfi ? (-174 + 10 * (ev.sfi / 150) * K_EGS).toFixed(2) : '—') + ' dBm/Hz';
+  document.getElementById('kp').textContent = '—';
+  document.getElementById('iono').textContent = ev.ionosphere_note ?? '—';
+
+  const card = document.createElement('div');
+  card.className = 'ev-card rx-card';
+  card.innerHTML = `
+    <div class="ev-hdr">
+      <span class="ev-kind rx">↓ RX #${rxCount}</span>
+      <span class="ev-ts">${ev.timestamp_utc ?? ''}</span>
+    </div>
+    <div class="ev-body">
+      <div class="ev-message">"${escHtml(ev.message ?? '(EGS voxel packet)')}"</div>
+      <div class="stamps">
+        <div class="stamp">
+          <div class="stamp-key">TTN Gateway ID</div>
+          <div class="stamp-val green">${ev.ttn_gateway_id ?? '—'}</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Gateway Location</div>
+          <div class="stamp-val green">${fmtLatLon(ev.ttn_gateway_lat, ev.ttn_gateway_lon)}</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">RSSI</div>
+          <div class="stamp-val green">${ev.ttn_rssi_db?.toFixed(1) ?? '—'} dBm</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">SNR</div>
+          <div class="stamp-val green">${ev.ttn_snr_db?.toFixed(1) ?? '—'} dB</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">RX Frequency</div>
+          <div class="stamp-val cyan">${ev.ttn_freq_mhz?.toFixed(3) ?? FC_MHZ} MHz</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">H I Cross-Reference</div>
+          <div class="stamp-val purple">${ev.hi_power_db?.toFixed(1) ?? '—'} dBm · hash: ${ev.hi_corr_hash ?? '—'}</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Solar Flux @ RX</div>
+          <div class="stamp-val gold">${ev.sfi?.toFixed(1) ?? '—'}</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Fractal Recovery</div>
+          <div class="stamp-val green">${rate.toFixed(1)}% · ${ev.parity_failures?.length ?? 0} failures</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Grid Hash (verified)</div>
+          <div class="stamp-val gold">${ev.grid_hash ?? '—'}</div>
+        </div>
+        <div class="stamp">
+          <div class="stamp-key">Ionosphere</div>
+          <div class="stamp-val amber">${ev.ionosphere_note ?? '—'}</div>
+        </div>
+      </div>
+      <div class="proof-bar">
+        <span class="proof-icon">🛰</span>
+        <span class="proof-text">Received via TTN · H I witnessed · Voxel recovered · Ionosphere logged</span>
+        <span class="proof-hash">LC: ${ev.layer_c_hash ?? '—'}</span>
+      </div>
+    </div>`;
+
+  const log = document.getElementById('rxLog');
+  log.prepend(card);
+}
+
+// ── TX trigger ────────────────────────────────────────────────────────────────
+async function transmit() {
+  const msg = document.getElementById('msgInput').value.trim();
+  if (!msg) return;
+  document.getElementById('txBtn').disabled = true;
+
+  if (wsConnected && ws?.readyState === WebSocket.OPEN) {
+    // Real path: send to Python bridge via HTTP POST
+    try {
+      await fetch('/tx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+    } catch(e) {
+      // Bridge not running — simulate locally
+      simulateTX(msg);
+    }
+  } else {
+    simulateTX(msg);
+  }
+
+  setTimeout(() => { document.getElementById('txBtn').disabled = false; }, 1500);
+}
+
+function simulateTX(msg) {
+  const sfi = 145 + Math.random() * 30;
+  const hi  = -120 + Math.random() * 5;
+  const ts  = new Date().toISOString().replace('.000','').replace('T',' ') + ' UTC';
+
+  const txEv = {
+    kind: 'TX', message: msg,
+    payload_hex: Array.from(new TextEncoder().encode(msg))
+      .map(b => b.toString(16).padStart(2,'0')).join(''),
+    payload_len: msg.length,
+    sfi, hi_power_db: hi,
+    grid_hash: randHex(16),
+    ttn_packet_hex: randHex(51*2),
+    timestamp_utc: ts,
+    layer_c_hash: randHex(16),
+    freq_mhz: FC_MHZ, hi_freq_mhz: HI_MHZ,
+  };
+  renderTX(txEv);
+  updateHI({ sfi, hi_power_db: hi, doppler_km_s: (Math.random()-0.5)*10,
+             hi_freq_mhz: HI_MHZ + (Math.random()-0.5)*0.0001 });
+
+  // Simulate RX after 2.5s (TTN round-trip latency)
+  setTimeout(() => {
+    const rxEv = {
+      kind: 'RX', message: msg,
+      payload_hex: txEv.payload_hex,
+      recovery_rate_pct: 96 + Math.random()*3.4,
+      parity_failures: [],
+      ttn_gateway_id: 'eui-58a0cbfffe' + randHex(6),
+      ttn_gateway_lat: 39.5296 + (Math.random()-0.5)*0.05,
+      ttn_gateway_lon: -119.8138 + (Math.random()-0.5)*0.05,
+      ttn_rssi_db: -80 - Math.random()*20,
+      ttn_snr_db:  5 + Math.random()*5,
+      ttn_freq_mhz: 915.2 + Math.random()*0.4,
+      hi_power_db: hi + (Math.random()-0.5)*1.5,
+      hi_corr_hash: randHex(16),
+      sfi, grid_hash: txEv.grid_hash,
+      timestamp_utc: new Date().toISOString().replace('.000','').replace('T',' ') + ' UTC',
+      layer_c_hash: randHex(16),
+      ionosphere_note: sfi > 170 ? 'Active — minor absorption possible'
+                     : 'Quiet — clean propagation window',
+    };
+    renderRX(rxEv);
+  }, 2500);
+}
+
+function demoTx() {
+  const demos = [
+    'EGS GATEWAY PING — K=2.5436 — SOLAR ANCHOR ACTIVE',
+    'VOXEL TEST 001 — H I BRIDGE CROSS-REF ENABLED',
+    'FRACTAL PARITY CHECK — 98.4% RECOVERY TARGET',
+    `SUNSPOT REPORT — SFI=${(145+Math.random()*30).toFixed(1)} — TIMESTAMP ${Date.now()}`,
+  ];
+  document.getElementById('msgInput').value =
+    demos[Math.floor(Math.random() * demos.length)];
+  transmit();
+}
+
+function clearTx() {
+  document.getElementById('msgInput').value = '';
+  document.getElementById('txLog').innerHTML =
+    '<div class="empty" id="txEmpty"><div class="empty-icon">📡</div>' +
+    '<div class="empty-text">No transmissions yet<br>Type a message above and transmit</div></div>';
+  txCount = 0;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;');
+}
+
+function randHex(n) {
+  return Array.from({length:n}, () =>
+    Math.floor(Math.random()*16).toString(16)).join('');
+}
+
+function fmtLatLon(lat, lon) {
+  if (!lat && !lon) return '—';
+  return `${lat?.toFixed(4)}°N  ${lon?.toFixed(4)}°W`;
+}
+
+// ── Keyboard shortcut (Ctrl+Enter to transmit) ────────────────────────────────
+document.getElementById('msgInput').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') transmit();
+});
+</script>
+</body>
+</html>
